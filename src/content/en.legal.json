@@ -1,0 +1,148 @@
+{
+  "updated": "31 August 2026",
+  "reviewNotice": "This page describes what the system actually does. It is not legal advice.",
+  "terms": {
+    "title": "Terms",
+    "intro": "These are the terms of membership in Empire English Community. They are written plainly on purpose — if anything here is unclear, ask before you pay.",
+    "sections": [
+      {
+        "heading": "What you are subscribing to",
+        "paras": [
+          "Membership gives you access to the daily practice platform, the student community, and the live sessions your plan specifies.",
+          "The weekly sessions are group sessions, and the maximum number of attendees is stated on the plans page. Where a plan includes one-to-one sessions, the monthly number is stated too."
+        ]
+      },
+      {
+        "heading": "Levels and certificates",
+        "paras": [
+          "Our levels are aligned to a recognised scale, but they are not an accredited certificate and are not connected to any examining body.",
+          "We do not promise you will sound like a native speaker. What we aim for is a clear, understandable American accent spoken with confidence."
+        ]
+      },
+      {
+        "heading": "Prices and payment",
+        "paras": [
+          "Prices in Egyptian pounds are for residents of Egypt. If you pay from outside Egypt, the international prices apply.",
+          "On an annual membership you pay ten months' price for twelve months of access.",
+          "The live assessment fee is credited in full against your first membership payment if you continue with us. If you do not, the fee is the cost of that session."
+        ]
+      },
+      {
+        "heading": "Payment verification",
+        "paras": [
+          "Payments are checked by a person, not automatically. There is therefore a short gap between paying and receiving access.",
+          "When you pay we ask for an image of your transfer receipt. That image contains financial information and is treated accordingly: it is never published and never shared."
+        ]
+      },
+      {
+        "heading": "The guarantee",
+        "paras": [
+          "Attend the first two sessions and do the tasks. If you then decide the system does not suit you, we refund the remainder of that month.",
+          "The condition is that you actually attended the two sessions and did the tasks — the guarantee assumes you tried."
+        ]
+      },
+      {
+        "heading": "Cancellation",
+        "paras": [
+          "Membership is monthly and stops when you ask it to. We do not force renewals.",
+          "When your membership stops, your progress and data are kept for a period, so returning means continuing from the same point. The exact period is on the privacy page."
+        ]
+      },
+      {
+        "heading": "Conduct that ends a membership",
+        "paras": [
+          "Sharing your account or the course content with anyone outside the membership.",
+          "Republishing curriculum materials or other students' recordings.",
+          "Bullying or abusing anyone in the community."
+        ]
+      },
+      {
+        "heading": "Content and ownership",
+        "paras": [
+          "The curriculum, lessons and teaching recordings are ours, and your access to them is personal and non-transferable.",
+          "The voice recordings you make remain yours. We use them inside the system for correction and assessment, and we show them in your level's channel — please read the privacy page, because that point matters."
+        ]
+      }
+    ]
+  },
+  "privacy": {
+    "title": "Privacy",
+    "intro": "This page states exactly what data we collect, where it goes, and when it is deleted. Without evasion.",
+    "highlightTitle": "The two most important points — read these first",
+    "highlights": [
+      "Your voice recordings are published in your level's community channel, so the other students at your level hear them. This is central to how the method works, and it is not a hidden setting.",
+      "Your recordings are processed by external speech-analysis services for scoring and transcription. That means your voice leaves our systems and reaches those services."
+    ],
+    "sections": [
+      {
+        "heading": "Data you give us",
+        "paras": [
+          "Your name and email address.",
+          "A contact method, which is either a phone number or your account identifier on the community platform.",
+          "Your country of residence, because it determines which price list applies to you.",
+          "Your learning goal and level, so we can place you on a path.",
+          "Your gender, used for grouping and for addressing you correctly in Arabic."
+        ]
+      },
+      {
+        "heading": "Data created as you use the system",
+        "paras": [
+          "Your progress through lessons, assessment results, points and streak.",
+          "Your voice recordings and the tasks you submit.",
+          "Teaching notes written about your progress."
+        ]
+      },
+      {
+        "heading": "Where your recordings go",
+        "paras": [
+          "They are published in your level's channel inside the community, so classmates at your level can see and hear them.",
+          "They are sent to external services to score your pronunciation and produce a transcript. Your voice genuinely leaves our systems.",
+          "If that is not comfortable for you, this membership is not right for you — and it is better to know that before you pay than after."
+        ]
+      },
+      {
+        "heading": "The third parties your content reaches",
+        "paras": [
+          "We name them, because this is the most important passage on this page:",
+          "Microsoft Azure Speech — receives your voice recording, for pronunciation scoring.",
+          "Cloudflare — every request passes through it, for hosting and delivery.",
+          "Discord — the community platform; your recordings and messages are published there.",
+          "Groq — receives audio and text, for speech-to-text and written evaluation.",
+          "Google Gemini — receives text only, for written evaluation.",
+          "Each of these is a company independent of us, with its own terms."
+        ]
+      },
+      {
+        "heading": "Payment",
+        "paras": [
+          "We do not store bank card details and never see them.",
+          "We do store the transfer receipt image you send, and a record of the amount, method and date.",
+          "Receipt images are stored somewhere not publicly reachable, and only the person verifying payment can open them."
+        ]
+      },
+      {
+        "heading": "Retention and deletion",
+        "paras": [
+          "Stopping a membership deletes nothing by itself — your progress stays exactly as it was.",
+          "Sixty days after a membership stops, your data is permanently deleted.",
+          "Any deliberate deletion is written to a separate log proving it was authorised. That log is not deleted."
+        ]
+      },
+      {
+        "heading": "Your rights",
+        "paras": [
+          "You can ask for a copy of your data.",
+          "You can ask for anything inaccurate to be corrected.",
+          "You can ask for your data to be deleted, which ends the membership, because the system cannot run without progress data.",
+          "You can ask for a specific recording to be removed from the community channel."
+        ]
+      },
+      {
+        "heading": "Contact",
+        "paras": [
+          "For anything concerning your data, message us on the same channel you already use with us."
+        ]
+      }
+    ]
+  }
+}

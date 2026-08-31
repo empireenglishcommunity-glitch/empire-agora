@@ -1,0 +1,2 @@
+Kept so the Docker build's `COPY /app/public` step has something to copy, and so
+Phase 8's founder image, favicon and OG image have a home that already exists.

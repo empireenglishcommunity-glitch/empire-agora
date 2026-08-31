@@ -1,6 +1,59 @@
 # EEC Commercial Model & Sales Page — Implementation Plan
 
-> **Status (2026-08-31): PHASES 0, 1 AND 2 COMPLETE.**
+> **Status (2026-08-31): PHASES 0–4 BUILT. Phase 5 PREPARED but NOT EXECUTED.**
+> The page exists and sells. It is not deployed, and deploying it needs SSH and a
+> Cloudflare token this session did not have — see `DEPLOY.md`.
+>
+> **Phase 3/4 evidence.** `npm run check` green. `npm run check:live` boots the real
+> server and passes: correct `dir`/`lang`, **887 Arabic lines** with zero
+> un-isolated Latin islands, currency isolation across **8 route/currency states**,
+> and every budget category within limits.
+>
+> Currency precedence verified against a live server — no signal → USD; cookie
+> honoured; `?c=` beats cookie; geo `EG` → EGP; **an explicit choice beats geo**. In
+> all eight states the page renders exactly one currency, never both.
+>
+> **Three defects found by looking at the rendered page, none catchable by a gate:**
+> 1. **Tofu in the plans list.** `✓` (U+2713) has no glyph in Cairo or Reem Kufi, so
+>    every feature row showed a missing-glyph box — on the most commercially
+>    important section of the page. Replaced with inline SVG. General rule now
+>    recorded: on an Arabic-first page, never rely on a decorative Unicode symbol
+>    being in the loaded face; Arabic webfonts carry Arabic and Latin, not dingbats.
+> 2. **The currency switch was ambiguous.** It read "change payment method — USD" on
+>    a page showing EGP prices, which parses as *"this page is in USD"* — the
+>    opposite of the truth. Now a full sentence naming the destination.
+> 3. **The currency choice did not persist.** `resolveCurrency` read a cookie that
+>    nothing ever wrote, so the choice was lost on the next navigation. Added
+>    `/api/currency`, which sets the cookie and redirects — and works without
+>    JavaScript. Its `next` parameter is validated against an open redirect
+>    (`//evil.com` and `/etc/passwd` both refused, verified).
+>
+> **The page is now DYNAMIC, and that has consequences.** It must read a cookie and
+> a geo header to choose a currency, so Next server-renders it on demand. Two
+> follow-ons: (a) the three build-output gates were replaced by `check:live`, which
+> fetches real routes — strictly better, since it exercises the geo path no build
+> artefact could; (b) **pure-static Cloudflare Pages will not host this.** Phase 5
+> needs SSR at the edge or the VPS. The Phase 5 hosting note must be revisited.
+>
+> Also found: **dynamic rendering drops `next/font`'s preload links**, so the three
+> faces are discovered only after CSS parses — a visible swap on the hero text,
+> which is the LCP element. Budgeted and warned, not failed; `display: swap` keeps
+> text readable throughout. Fix when hosting is settled.
+>
+> **LAUNCH BLOCKERS — do not go live with these open:**
+> - ~~`/terms` and `/privacy` do not exist.~~ **BUILT** — both routes exist in both
+>   locales, prerendered, footer links restored and verified to resolve. **But the
+>   content needs owner review**, and one question is genuinely open: there is no
+>   age policy, and publishing a minor's voice recording to a community channel and
+>   sending it to third-party processors is not something to leave undecided.
+> - The **proof** and **testimonials** sections are not built at all (§2 and §10 of
+>   design §3) — correctly, since there is no consented content yet.
+> - The founder photo frame is reserved but **no image is wired** (Phase 8).
+> - Seat display shows a tier's **cap**, not seats *remaining*. Honest as worded
+>   ("limited seats — 12") but 4.4 wants a derived count.
+>
+> **Phase 0 remains complete except 0.2 and 0.3** — both merged now
+> (`empire-chronicle` #138, `EEC-MATERIAL` #7).
 >
 > **Phase 2 evidence:**
 > - `npm run check` green: types, price invariants, copy bidi, logical properties.
@@ -85,11 +138,11 @@
       `.next/`, `out/`, OS files), README, and
       `.kiro/steering/project-rules.md` pointing at the memory hub. *Retrofitting
       this later is how 4 of 9 repos ended up needing repair.* `Req: R12.1`
-- [ ] 0.2 Register the repo in `empire-chronicle` — `README.md` repo map **and**
+- [x] 0.2 Register the repo in `empire-chronicle` — `README.md` repo map **and**
       the protocol repo-map table — via a PR against the chronicle. Note the
       template still uses the retired name `Kiro-Master-Index`; use
       `empire-chronicle`. `Req: R13`
-- [ ] 0.3 **Amend `empire-style-guide.md`.** §3 palette → obsidian + antique gold
+- [x] 0.3 **Amend `empire-style-guide.md`.** §3 palette → obsidian + antique gold
       (design §1/§2.1); §4 → Arabic register differs by currency path (Egyptian
       colloquial on EGP, light MSA on USD). Ship in the same PR as the first page
       code. *The guide is the declared source of truth and "the guide wins" — it
@@ -165,27 +218,27 @@ contrast gates in CI.
 
 Sections per design §3. All copy in `ar.json` / `en.json` — never inline.
 
-- [ ] 3.1 Hero: crest, honest headline, subhead, primary CTA (free placement
+- [x] 3.1 Hero: crest, honest headline, subhead, primary CTA (free placement
       test), secondary (plans), currency chip. **No entry gate, no ambient
       audio.** LCP element is text. `Req: R9.1, R11.2`
-- [ ] 3.2 §3 "Why it hasn't worked before" — three lines, Egyptian colloquial, no
+- [x] 3.2 §3 "Why it hasn't worked before" — three lines, Egyptian colloquial, no
       hype. `Req: R9.1, R9.2, R9.5`
-- [ ] 3.3 §4 "The system — three layers." **Retention-critical:** reps are async
+- [x] 3.3 §4 "The system — three layers." **Retention-critical:** reps are async
       and unlimited on Darb + the bot; the live hour is correction and
       accountability. This is what makes a 20-person session honest and stops
       month-2 churn. `Req: R9.3`
-- [ ] 3.4 §6 "What you get" — deliverables. Level language always *"CEFR-aligned,
+- [x] 3.4 §6 "What you get" — deliverables. Level language always *"CEFR-aligned,
       not certified."* Use the guide's five CEFR ranks, **not** the assessment
       app's four test bands. `Req: R9.1`
-- [ ] 3.5 §8 "How joining works" — four steps, stating plainly that a human
+- [x] 3.5 §8 "How joining works" — four steps, stating plainly that a human
       verifies payment and how long that takes. `Req: R5.1`
-- [ ] 3.6 §11 guarantee, §12 FAQ (payment rails, Gulf timezone, beginner anxiety,
+- [x] 3.6 §11 guarantee, §12 FAQ (payment rails, Gulf timezone, beginner anxiety,
       accent honesty, refunds, missed sessions, Egypt-vs-abroad pricing), §13
       final CTA, §14 footer with Terms / IP / Privacy. `Req: R9.1`
-- [ ] 3.7 Sticky mobile CTA bar after section 2. `Req: R11.1`
+- [x] 3.7 Sticky mobile CTA bar after section 2. `Req: R11.1`
 - [ ] 3.8 Empty shells (rendering nothing) for §2 proof, §9 founder, §10
       testimonials. **No placeholder quotes, no stock faces.** `Req: R9.2, R14`
-- [ ] 3.9 Copy review against GC-5: no "native", no "fluent in X days", no
+- [x] 3.9 Copy review against GC-5: no "native", no "fluent in X days", no
       fabricated countdowns, no invented "was" prices. `Req: R9.1, R9.2`
 
 **Ships when:** the full page renders persuasively on a Pages preview URL, with
@@ -195,16 +248,16 @@ every CTA going to WhatsApp.
 
 ## Phase 4 — Plans and currency isolation
 
-- [ ] 4.1 Tier cards from `pricing.ts`: annual **preselected**, `التركيز` marked
+- [x] 4.1 Tier cards from `pricing.ts`: annual **preselected**, `التركيز` marked
       most-chosen, VIP showing its 12-seat cap, `النخبة` as anchor, `دَرْب` as
       entry. `Req: R3.1, D4`
-- [ ] 4.2 Currency resolution from `CF-IPCountry`, overridable, persisted in
+- [x] 4.2 Currency resolution from `CF-IPCountry`, overridable, persisted in
       cookie + URL. Never a hard block. `Req: R1.1, R1.2, R1.4`
-- [ ] 4.3 **CI gate: no rendered document may contain both an EGP and a USD
+- [x] 4.3 **CI gate: no rendered document may contain both an EGP and a USD
       price.** Scan every route in both currency states. `Req: R1.3`
 - [ ] 4.4 Seat-availability display derived from real counts, or omitted. No
       decorative scarcity. `Req: R3.3, R9.2`
-- [ ] 4.5 Terms text stating EGP pricing is for residents of Egypt. `Req: R1.6`
+- [x] 4.5 Terms text stating EGP pricing is for residents of Egypt. `Req: R1.6`
 
 **Ships when:** a visitor sees exactly one currency, correct prices, and cannot
 see the other currency's numbers anywhere.
@@ -216,9 +269,36 @@ see the other currency's numbers anywhere.
 Do this **before** checkout exists. The page starts earning via WhatsApp while
 the money code is still being written.
 
-- [ ] 5.1 Deploy to Cloudflare Pages (design §11.2 — precedent: `empire-dojo`).
-      *Alternate path if the owner prefers one box: Docker on `127.0.0.1:8090`
-      capped at 384 MB, with `free -m` and `docker stats` checked first.*
+> **PREPARED, NOT EXECUTED (2026-08-31).** Every artefact exists and is verified
+> locally; the cutover itself needs SSH and a Cloudflare token, which this session
+> did not have. Runbook: [`DEPLOY.md`](../../../DEPLOY.md).
+>
+> **The hosting decision reversed.** Cloudflare Pages was chosen on the premise
+> that this was a static site. The page must read a cookie and a geo header to pick
+> a currency, so it is server-rendered on demand and a static host cannot serve it.
+> It now mirrors the pattern already proven on the box by `EEC-MATERIAL/web`:
+> standalone build → Docker → `127.0.0.1:8090` → existing Cloudflare Tunnel. The
+> edge option (`next-on-pages`/OpenNext) is not ruled out, but its Next 16
+> compatibility could not be tested without deploying — the wrong thing to discover
+> mid-cutover.
+>
+> **Measured, not guessed:** boot 103 MB · 50 renders 140 MB · 200 requests
+> **166 MB peak** · 15 s idle back to 103 MB (no leak). Cap set to 384 MB ≈ 2.3×
+> peak. Image 210 MB.
+
+- [x] 5.1 **Deploy artefacts built and verified locally** — `output: "standalone"`,
+      `Dockerfile` (mirroring the proven `eec-web` build), `docker-compose.yml` on
+      `127.0.0.1:8090` capped at 384 MB, `.dockerignore`, `public/`. Image builds;
+      the standalone server serves every route and currency isolation holds inside
+      it. **Cloudflare Pages abandoned — see the note above.**
+- [x] 5.1b **Legacy-path redirects enumerated and verified.** After cutover this app
+      owns the root domain, so every route the old site had either has a home here
+      or 404s — and those are links already shared in Telegram posts and student
+      bookmarks. `/cohort` and `/waitlist` redirect internally; `/portal/*`,
+      `/api/coursebook/*`, `/guide`, `/about`, `/accent-lab` redirect to the portal
+      hostname. **This also fixed a bug shipped in Phase 0:** `/cohort` pointed at
+      `/ar/plans`, which does not exist — the redirect resolved to a 404, which is
+      worse than no redirect because it looks handled.
 - [ ] 5.2 Add tunnel ingress `portal.empireenglish.online → localhost:8080`; DNS
       route it. **Do not touch the root yet.**
 - [ ] 5.3 **Verify the portal fully on its new hostname first** — login, lessons,
