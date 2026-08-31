@@ -86,7 +86,7 @@ cd /opt/empire-agora
 
 # Payment rails and the owner token. NEVER committed — see .env.example.
 cp .env.example .env
-nano .env          # fill RAIL_* and ADMIN_TOKEN (openssl rand -hex 32)
+nano .env          # fill RAIL_*, OWNER_WHATSAPP, and ADMIN_TOKEN (openssl rand -hex 32)
 
 docker compose up -d --build empire-agora
 ```
@@ -99,7 +99,18 @@ docker compose up -d --build empire-agora
 >
 > A rail with no configured account **refuses orders on that rail** (503) rather than
 > creating an order nobody can pay. So an empty `RAIL_INSTAPAY` does not corrupt
-> anything — it just makes InstaPay unavailable until you set it.
+> anything — it just makes InstaPay unavailable until you set it. The `/join` form
+> does not even offer an unconfigured rail, and if *every* rail is unset it says so
+> instead of showing a form that cannot succeed.
+>
+> `ADMIN_TOKEN` **fails closed**: unset, or shorter than 16 characters, locks the
+> order queue for everyone rather than opening it to everyone.
+>
+> **Two different variables share this name across two apps.** `ADMIN_TOKEN` in
+> `/opt/empire-agora/.env` guards the *order queue*; the `$ADMIN_TOKEN` used in step 3
+> to fetch the Teacher's Edition is the *portal's*, from a different `.env`. Do not
+> reuse one value for both — a token that opens the coursebook should not also settle
+> payments.
 
 > Build **by service name**. A bare `docker compose up -d --build` on this box has
 > failed before on another project's relative build context.
@@ -114,6 +125,16 @@ docker compose ps                                    # empire-agora "Up"
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8090/ar          # 200
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8090/ar/terms    # 200
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8090/ar/privacy  # 200
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8090/ar/join     # 200
+
+# The order queue must be LOCKED with no cookie. This is the check that matters most:
+# a 200 here with a full order list means the guard is inverted.
+curl -s http://127.0.0.1:8090/ar/admin/orders | grep -c 'name="token"'     # > 0 (sign-in form)
+curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+  http://127.0.0.1:8090/api/admin/orders/EEC-2609-ASEG-7K3Q                # 404, never 200
+
+# Payment details must NEVER appear in public markup — only after an order exists.
+curl -s http://127.0.0.1:8090/ar/join | grep -c "$(grep '^RAIL_VODAFONE_CASH=' .env | cut -d= -f2)"  # 0
 
 # Currency must resolve from the geo header, and show exactly one currency:
 curl -s -H 'cf-ipcountry: EG' http://127.0.0.1:8090/ar | grep -c 'ج\.م'    # > 0
