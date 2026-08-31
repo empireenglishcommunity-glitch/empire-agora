@@ -1,0 +1,39 @@
+# empire-agora — follows the VPS convention: /opt/empire-agora/, bound to
+# 127.0.0.1:PORT, routed via the existing Cloudflare Named Tunnel.
+#
+# Docker bypasses UFW, so binding to localhost IS the access control. Do not change
+# the port mapping to 0.0.0.0 — that would expose this service directly to the
+# internet, past the firewall, which is how three ports were found open on this box
+# during the 2026-08-29 hardening pass.
+
+services:
+  empire-agora:
+    build: .
+    image: empire-agora:latest
+    container_name: empire-agora
+    restart: unless-stopped
+    ports:
+      # 8080 is taken by eec-web (which becomes the portal). 8090 is free.
+      - "127.0.0.1:8090:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+    deploy:
+      resources:
+        limits:
+          # 384M, not 512M. MEASURED, not guessed — the standalone server (the exact
+          # process this container runs) was profiled locally:
+          #
+          #   boot ................ 103 MB
+          #   50 dynamic renders .. 140 MB
+          #   200 requests ........ 166 MB   ← observed peak
+          #   15s idle ............ 103 MB   ← returns to baseline, no leak
+          #
+          # 384M is ~2.3x the observed peak. This box is a 4 GB CX23 already running
+          # ~10 containers plus eec-web at 512M, so headroom is not free.
+          # Raise this only against a NEW measurement, never against a hunch.
+          memory: 384M
+          cpus: "0.5"
+    # No volume: this app stores nothing yet. Orders arrive in Phase 6 and will need
+    # a deliberate decision about durable storage at that point — do NOT quietly add
+    # a bind mount before then.
