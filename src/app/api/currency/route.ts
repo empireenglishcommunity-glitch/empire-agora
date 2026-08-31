@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { seeOther } from "@/lib/redirect";
 import { CURRENCY_COOKIE } from "@/lib/currency";
 import { locales, defaultLocale } from "@/i18n/config";
 
@@ -36,12 +37,14 @@ export async function GET(req: NextRequest) {
   const requested = req.nextUrl.searchParams.get("next") ?? "";
   const safeNext = isSafeInternalPath(requested) ? requested : `/${defaultLocale}`;
 
-  const url = new URL(safeNext, req.nextUrl.origin);
   // Keep the parameter in the URL too, so a copied link still carries the currency
-  // even for someone who arrives without the cookie.
-  url.searchParams.set("c", to);
-
-  const res = NextResponse.redirect(url, { status: 303 });
+  // even for someone who arrives without the cookie. Built as a relative path, never
+  // against `req.nextUrl.origin` — see src/lib/redirect.ts for why that origin is wrong
+  // behind a proxy.
+  const [pathOnly, existingQuery] = safeNext.split("?");
+  const params = new URLSearchParams(existingQuery ?? "");
+  params.set("c", to);
+  const res = seeOther(`${pathOnly}?${params.toString()}`);
   res.cookies.set(CURRENCY_COOKIE, to, {
     path: "/",
     maxAge: ONE_YEAR,

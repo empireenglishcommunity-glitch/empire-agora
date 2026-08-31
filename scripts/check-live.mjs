@@ -598,6 +598,57 @@ try {
     console.log(`  18+ affirmation required, both endpoints    ✓`);
   }
 
+  // ── 1d. EVERY REDIRECT MUST BE RELATIVE ──
+  /**
+   * The highest-consequence assertion in this file, added after the bug it describes was
+   * found on the real box and not by any gate here.
+   *
+   * `NextResponse.redirect(new URL(path, req.nextUrl.origin))` is the documented pattern and
+   * it emitted `https://0.0.0.0:3000/ar/join/EEC-...` in the container, because
+   * `nextUrl.origin` resolves from the address the server is BOUND to and the Dockerfile sets
+   * `HOSTNAME=0.0.0.0`. Correct `Host` / `X-Forwarded-*` headers made no difference.
+   *
+   * A browser cannot follow that. Buyers would have created orders that stored correctly and
+   * then landed on an error instead of the page with their reference code and payment
+   * details — while the server logged a successful 303.
+   *
+   * This gate could not see it before because the test client reaches the app at the address
+   * it is bound to, so the origin happened to be right. Asserting the Location is RELATIVE
+   * removes the dependency on where the test runs from.
+   */
+  {
+    const cases = [
+      ["order submit (error path)", () => post("/api/orders/submit", { locale: "ar" })],
+      ["admin sign-in (denied)", () => post("/api/admin/session", { locale: "ar", token: "nope" })],
+      ["currency switch", () => fetch(`${BASE}/api/currency?to=EGP&next=/ar`, { redirect: "manual" })],
+      [
+        "receipt upload (no file)",
+        () => fetch(`${BASE}/api/orders/EEC-2609-ASEG-7K3Q/proof`, { method: "POST", body: new FormData(), redirect: "manual" }),
+      ],
+    ];
+
+    for (const [label, run] of cases) {
+      const res = await run();
+      const loc = res.headers.get("location");
+      if (!loc) continue; // a 404/400 with no redirect is fine for these probes
+      if (!loc.startsWith("/")) {
+        fail(
+          `${label}: Location is "${loc}" — it must be a ROOT-RELATIVE path.
+` +
+            `      An absolute URL here is built from the bound address, which behind a proxy
+` +
+            `      is 0.0.0.0:3000 and unfollowable by any browser. Use seeOther() from
+` +
+            `      src/lib/redirect.ts.`,
+        );
+      }
+      if (/0\.0\.0\.0|127\.0\.0\.1|localhost/.test(loc)) {
+        fail(`${label}: Location "${loc}" leaks an internal address`);
+      }
+    }
+    console.log(`  every redirect Location is relative           ✓`);
+  }
+
   // ── 2. Create an order ──
   let reference = null;
   {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { seeOther } from "@/lib/redirect";
 import { ADMIN_COOKIE, isValidAdminToken, adminTokenConfigured } from "@/lib/admin";
 
 /**
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
    * the owner out of their own queue with a correct token in hand.
    */
   if (form.get("action") === "signout") {
-    const out = NextResponse.redirect(new URL(target, req.nextUrl.origin), 303);
+    const out = seeOther(target);
     out.cookies.set(ADMIN_COOKIE, "", { path: "/", maxAge: 0 });
     return out;
   }
@@ -66,14 +67,14 @@ export async function POST(req: NextRequest) {
   if (!adminTokenConfigured()) {
     // Says "not configured" rather than "wrong", because this one is an operator
     // problem and silently behaving like a wrong password wastes their afternoon.
-    return NextResponse.redirect(new URL(`${target}?e=unconfigured`, req.nextUrl.origin), 303);
+    return seeOther(`${target}?e=unconfigured`);
   }
 
   if (typeof token !== "string" || !isValidAdminToken(token)) {
-    return NextResponse.redirect(new URL(`${target}?e=denied`, req.nextUrl.origin), 303);
+    return seeOther(`${target}?e=denied`);
   }
 
-  const res = NextResponse.redirect(new URL(target, req.nextUrl.origin), 303);
+  const res = seeOther(target);
   res.cookies.set(ADMIN_COOKIE, token, {
     httpOnly: true,
     sameSite: "strict",
