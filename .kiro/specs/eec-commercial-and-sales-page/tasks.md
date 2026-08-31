@@ -1,6 +1,8 @@
 # EEC Commercial Model & Sales Page — Implementation Plan
 
-> **Status (2026-08-31): PHASES 0–4 BUILT. The page exists and sells. NOT DEPLOYED.**
+> **Status (2026-08-31): PHASES 0–4 BUILT. Phase 5 PREPARED but NOT EXECUTED.**
+> The page exists and sells. It is not deployed, and deploying it needs SSH and a
+> Cloudflare token this session did not have — see `DEPLOY.md`.
 >
 > **Phase 3/4 evidence.** `npm run check` green. `npm run check:live` boots the real
 > server and passes: correct `dir`/`lang`, **887 Arabic lines** with zero
@@ -39,8 +41,11 @@
 > text readable throughout. Fix when hosting is settled.
 >
 > **LAUNCH BLOCKERS — do not go live with these open:**
-> - `/terms` and `/privacy` **do not exist.** The footer links were removed rather
->   than left pointing at 404s. A page that asks for money needs both.
+> - ~~`/terms` and `/privacy` do not exist.~~ **BUILT** — both routes exist in both
+>   locales, prerendered, footer links restored and verified to resolve. **But the
+>   content needs owner review**, and one question is genuinely open: there is no
+>   age policy, and publishing a minor's voice recording to a community channel and
+>   sending it to third-party processors is not something to leave undecided.
 > - The **proof** and **testimonials** sections are not built at all (§2 and §10 of
 >   design §3) — correctly, since there is no consented content yet.
 > - The founder photo frame is reserved but **no image is wired** (Phase 8).
@@ -264,9 +269,36 @@ see the other currency's numbers anywhere.
 Do this **before** checkout exists. The page starts earning via WhatsApp while
 the money code is still being written.
 
-- [ ] 5.1 Deploy to Cloudflare Pages (design §11.2 — precedent: `empire-dojo`).
-      *Alternate path if the owner prefers one box: Docker on `127.0.0.1:8090`
-      capped at 384 MB, with `free -m` and `docker stats` checked first.*
+> **PREPARED, NOT EXECUTED (2026-08-31).** Every artefact exists and is verified
+> locally; the cutover itself needs SSH and a Cloudflare token, which this session
+> did not have. Runbook: [`DEPLOY.md`](../../../DEPLOY.md).
+>
+> **The hosting decision reversed.** Cloudflare Pages was chosen on the premise
+> that this was a static site. The page must read a cookie and a geo header to pick
+> a currency, so it is server-rendered on demand and a static host cannot serve it.
+> It now mirrors the pattern already proven on the box by `EEC-MATERIAL/web`:
+> standalone build → Docker → `127.0.0.1:8090` → existing Cloudflare Tunnel. The
+> edge option (`next-on-pages`/OpenNext) is not ruled out, but its Next 16
+> compatibility could not be tested without deploying — the wrong thing to discover
+> mid-cutover.
+>
+> **Measured, not guessed:** boot 103 MB · 50 renders 140 MB · 200 requests
+> **166 MB peak** · 15 s idle back to 103 MB (no leak). Cap set to 384 MB ≈ 2.3×
+> peak. Image 210 MB.
+
+- [x] 5.1 **Deploy artefacts built and verified locally** — `output: "standalone"`,
+      `Dockerfile` (mirroring the proven `eec-web` build), `docker-compose.yml` on
+      `127.0.0.1:8090` capped at 384 MB, `.dockerignore`, `public/`. Image builds;
+      the standalone server serves every route and currency isolation holds inside
+      it. **Cloudflare Pages abandoned — see the note above.**
+- [x] 5.1b **Legacy-path redirects enumerated and verified.** After cutover this app
+      owns the root domain, so every route the old site had either has a home here
+      or 404s — and those are links already shared in Telegram posts and student
+      bookmarks. `/cohort` and `/waitlist` redirect internally; `/portal/*`,
+      `/api/coursebook/*`, `/guide`, `/about`, `/accent-lab` redirect to the portal
+      hostname. **This also fixed a bug shipped in Phase 0:** `/cohort` pointed at
+      `/ar/plans`, which does not exist — the redirect resolved to a 404, which is
+      worse than no redirect because it looks handled.
 - [ ] 5.2 Add tunnel ingress `portal.empireenglish.online → localhost:8080`; DNS
       route it. **Do not touch the root yet.**
 - [ ] 5.3 **Verify the portal fully on its new hostname first** — login, lessons,

@@ -30,7 +30,10 @@ import { promotedTiers, ASSESSMENT, type Currency } from "@/commerce/pricing";
  * noindex: useful internally, not a page for buyers.
  */
 export const metadata: Metadata = {
-  title: "Design system",
+  // Arabic, to match the page's own heading and the Arabic brand suffix the layout
+  // appends. A Latin title here put two Latin islands into an Arabic <title> and
+  // failed the bidi gate — titles are rendered text too.
+  title: "نظام التصميم",
   robots: { index: false, follow: false },
 };
 
