@@ -37,8 +37,26 @@ jobs:
       - name: Bidi
         run: npm run check:bidi
 
+      # This page is RTL by default, so `ml-4` silently mirrors to the wrong side
+      # while every test still passes. One `pl-6` added in a hurry is how an RTL
+      # layout rots.
+      - name: Logical properties
+        run: npm run check:logical
+
       - name: Build
         run: npm run build
+
+      # The copy gate cannot see what COMPOSITION produces: a clean ar.json plus
+      # `<p>{t.pay} InstaPay أو Vodafone Cash</p>` is a broken page. This one reads
+      # the rendered HTML, and excludes content already inside <bdi> so it flags the
+      # actual defect — un-isolated Latin — rather than the symptom.
+      - name: Rendered bidi + direction attributes
+        run: npm run check:rendered
+
+      # Bytes on the wire for a first view, measured from the real build. The
+      # audience is on Egyptian mobile data.
+      - name: Performance budget
+        run: npm run check:perf
 
       # Printed into the job log so the governing metric is always derivable from
       # a CI run rather than remembered from a document.

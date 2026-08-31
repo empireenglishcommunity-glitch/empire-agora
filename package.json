@@ -11,7 +11,11 @@
     "typecheck": "tsc --noEmit",
     "check:prices": "tsx scripts/check-price-invariants.mjs",
     "check:bidi": "node --no-warnings scripts/check-bidi.mjs",
-    "check": "npm run typecheck && npm run check:prices && npm run check:bidi",
+    "check:logical": "node --no-warnings scripts/check-logical-properties.mjs",
+    "check:rendered": "node --no-warnings scripts/check-bidi-rendered.mjs",
+    "check:perf": "node --no-warnings scripts/check-perf-budget.mjs",
+    "check": "npm run typecheck && npm run check:prices && npm run check:bidi && npm run check:logical",
+    "verify": "npm run check && npm run build && npm run check:rendered && npm run check:perf",
     "revenue": "tsx scripts/revenue-per-teaching-hour.mjs"
   },
   "dependencies": {
