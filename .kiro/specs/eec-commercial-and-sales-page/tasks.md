@@ -39,8 +39,11 @@
 > text readable throughout. Fix when hosting is settled.
 >
 > **LAUNCH BLOCKERS — do not go live with these open:**
-> - `/terms` and `/privacy` **do not exist.** The footer links were removed rather
->   than left pointing at 404s. A page that asks for money needs both.
+> - ~~`/terms` and `/privacy` do not exist.~~ **BUILT** — both routes exist in both
+>   locales, prerendered, footer links restored and verified to resolve. **But the
+>   content needs owner review**, and one question is genuinely open: there is no
+>   age policy, and publishing a minor's voice recording to a community channel and
+>   sending it to third-party processors is not something to leave undecided.
 > - The **proof** and **testimonials** sections are not built at all (§2 and §10 of
 >   design §3) — correctly, since there is no consented content yet.
 > - The founder photo frame is reserved but **no image is wired** (Phase 8).

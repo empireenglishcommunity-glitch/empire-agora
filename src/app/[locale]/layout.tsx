@@ -34,21 +34,45 @@ const reemKufi = Reem_Kufi({
 // identically everywhere instead of depending on a webfont arriving. Latin labels
 // use Cairo with wide tracking, which at eyebrow size is visually equivalent.
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://empireenglish.online"),
-  title: {
-    default: "Empire English Community",
-    template: "%s · Empire English Community",
-  },
-  // No claim here that the style guide forbids: no "native", no "fluent in N days".
-  description:
-    "نظام تدريب إنجليزي للناطقين بالعربية — تدريب يومي، جلسات مباشرة، ومستوى محدد بدقة.",
-  openGraph: {
-    type: "website",
-    siteName: "Empire English Community",
-  },
-  robots: { index: true, follow: true },
+/**
+ * Locale-aware metadata.
+ *
+ * The title template is per-locale because a shared Latin suffix put three Latin
+ * tokens into every Arabic `<title>` — `"الشروط والأحكام · Empire English Community"`.
+ * A title is rendered in browser tabs and link previews, where that mixed run
+ * reorders exactly as it would in body text. The Arabic site gets an Arabic suffix,
+ * which is both correct typography and better branding; the bidi gate caught this
+ * the moment the legal pages were added to it.
+ */
+const BRAND: Record<Locale, string> = {
+  ar: "إمبراطورية الإنجليزية",
+  en: "Empire English Community",
 };
+
+const DESCRIPTION: Record<Locale, string> = {
+  // No claim the style guide forbids: no "native", no "fluent in N days".
+  ar: "نظام تدريب إنجليزي للناطقين بالعربية — تدريب يومي، جلسات مباشرة، ومستوى محدد بدقة.",
+  en: "An English training system for Arabic speakers — daily practice, live sessions, and a precisely measured level.",
+};
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const typed: Locale = isLocale(locale) ? locale : "ar";
+  return {
+    metadataBase: new URL("https://empireenglish.online"),
+    title: {
+      default: BRAND[typed],
+      template: `%s · ${BRAND[typed]}`,
+    },
+    description: DESCRIPTION[typed],
+    openGraph: { type: "website", siteName: BRAND[typed] },
+    robots: { index: true, follow: true },
+  };
+}
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));

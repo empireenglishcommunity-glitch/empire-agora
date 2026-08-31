@@ -375,10 +375,12 @@ export default async function Home({
                 <a href={ASSESSMENT_URL} className="hover:text-(--color-parchment)">
                   {t.footer.assessment}
                 </a>
-                {/* /terms and /privacy are NOT built yet. Linking to a 404 from a
-                    page that asks for money is worse than not linking at all, so
-                    they are omitted until the pages exist — tracked as a launch
-                    blocker in tasks.md, not quietly dropped. */}
+                <a href={`/${locale}/terms`} className="hover:text-(--color-parchment)">
+                  {t.footer.terms}
+                </a>
+                <a href={`/${locale}/privacy`} className="hover:text-(--color-parchment)">
+                  {t.footer.privacy}
+                </a>
               </nav>
             </div>
             <p className="mt-10 text-xs text-(--color-bronze-dim)">{t.footer.honesty}</p>

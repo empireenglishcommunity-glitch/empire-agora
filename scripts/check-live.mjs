@@ -310,6 +310,13 @@ try {
     { label: "/ar (geo: SA)", path: "/ar", locale: "ar", headers: { "cf-ipcountry": "SA" }, expectPrices: true, expectCurrency: "USD" },
     { label: "/ar?term=monthly", path: "/ar?term=monthly&c=EGP", locale: "ar", expectPrices: true, expectCurrency: "EGP" },
     { label: "/en", path: "/en", locale: "en", expectPrices: true },
+    // Legal pages carry no prices, but they are buyer-facing Arabic prose naming
+    // payment rails and third-party services — which is exactly where mixed-direction
+    // text creeps in. They get the same direction and bidi scrutiny as the offer.
+    { label: "/ar/terms", path: "/ar/terms", locale: "ar" },
+    { label: "/ar/privacy", path: "/ar/privacy", locale: "ar" },
+    { label: "/en/terms", path: "/en/terms", locale: "en" },
+    { label: "/en/privacy", path: "/en/privacy", locale: "en" },
     {
       label: "/ar/design",
       path: "/ar/design",
