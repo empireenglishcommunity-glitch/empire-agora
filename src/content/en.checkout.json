@@ -20,6 +20,9 @@
       "crypto": "Cryptocurrency"
     },
     "aboutLegend": "About you",
+    "ageLegend": "Eligibility",
+    "ageConfirm": "I am 18 years old or older.",
+    "ageWhy": "Membership is for adults only, and the reason is specific: your voice recordings are published to your level's channel inside the community, and are sent to external speech-analysis services. We are not set up to handle a parent or guardian's consent, so we do not accept anyone under 18.",
     "fields": {
       "name": "Full name",
       "contact": "WhatsApp number",
@@ -40,7 +43,8 @@
       "name": "Please enter your full name.",
       "contact": "Please enter a WhatsApp number we can reach you on.",
       "rail_unavailable": "No payment method is available right now. Message us on WhatsApp and we will arrange it manually.",
-      "storage": "We could not record your order, and nothing was charged. Try again, and if it keeps happening message us on WhatsApp."
+      "storage": "We could not record your order, and nothing was charged. Try again, and if it keeps happening message us on WhatsApp.",
+      "age": "You must confirm you are 18 or older. Membership is for adults only."
     }
   },
   "confirm": {

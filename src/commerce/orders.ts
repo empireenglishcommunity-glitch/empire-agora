@@ -75,6 +75,18 @@ export interface NewOrder {
   source?: string | null;
   /** Client-generated. The same key must never create a second order. */
   idempotencyKey: string;
+  /**
+   * The buyer affirmed they are 18 or older.
+   *
+   * REQUIRED, and `createOrder` refuses without it. The membership is 18+ because a
+   * student's voice is published to a shared community channel and sent to third-party
+   * speech services — both of which need a parental-consent position for a minor, and
+   * neither of which this service is built to obtain.
+   *
+   * Recorded as a timestamp rather than a boolean, because what matters later is *when*
+   * the affirmation was made, against which version of the terms.
+   */
+  ageConfirmed: boolean;
 }
 
 export interface Order {
@@ -107,6 +119,8 @@ export interface Order {
   verifiedBy: string | null;
   source: string | null;
   notes: string | null;
+  /** When the buyer affirmed they are 18 or older. Never null for a new order. */
+  ageConfirmedAt: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -165,8 +179,54 @@ function connect(): DatabaseSync {
   handle.exec(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`);
   handle.exec(`CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at)`);
 
+  migrate(handle);
+
   db = handle;
   return handle;
+}
+
+/**
+ * Columns added after the first deployment.
+ *
+ * WHY THIS EXISTS, AND WHY IT IS NOT OPTIONAL
+ * -------------------------------------------
+ * The schema above is `CREATE TABLE IF NOT EXISTS`, which does exactly nothing once the
+ * table exists. So adding a column to that statement applies to a FRESH database and
+ * silently does not apply to the live one — and the failure surfaces as
+ * `SQLITE_ERROR: no such column` on the next order, i.e. **at checkout, to a paying
+ * customer**, in the one place this system must not break.
+ *
+ * There was no migration path at all before the first column needed adding. That is the
+ * normal way this bug ships: nothing is wrong until the second schema change, and by then
+ * the database has real money in it.
+ *
+ * Every entry must be NULLABLE. SQLite cannot `ADD COLUMN ... NOT NULL` without a default,
+ * and a backfilled default would silently invent a value for existing rows — which for a
+ * column like `age_confirmed_at` would mean fabricating a legal affirmation nobody made.
+ */
+const ADDED_COLUMNS: Array<{ name: string; ddl: string; why: string }> = [
+  {
+    name: "age_confirmed_at",
+    ddl: "TEXT",
+    why: "when the buyer affirmed they are 18 or older (18+ policy, 2026-08-31)",
+  },
+];
+
+function migrate(handle: DatabaseSync): void {
+  const existing = new Set(
+    handle
+      .prepare(`PRAGMA table_info(orders)`)
+      .all()
+      .map((row) => String((row as { name: unknown }).name)),
+  );
+
+  for (const column of ADDED_COLUMNS) {
+    if (existing.has(column.name)) continue;
+    // Not wrapped in a try/catch: a migration that fails must stop the process rather
+    // than leave the ledger half-shaped and accepting writes.
+    handle.exec(`ALTER TABLE orders ADD COLUMN ${column.name} ${column.ddl}`);
+    console.log(`[orders] migrated: added column "${column.name}" — ${column.why}`);
+  }
 }
 
 /** For tests and scripts: drop the cached handle so a new DB_FILE takes effect. */
@@ -226,6 +286,7 @@ function rowToOrder(row: any): Order {
     verifiedBy: row.verified_by ?? null,
     source: row.source ?? null,
     notes: row.notes ?? null,
+    ageConfirmedAt: row.age_confirmed_at ?? null,
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -294,6 +355,24 @@ export function createOrder(input: NewOrder): { order: Order; reused: boolean } 
   const existing = findByIdempotencyKey(input.idempotencyKey);
   if (existing) return { order: existing, reused: true };
 
+  /**
+   * The 18+ affirmation is checked HERE, in the ledger, not only in the route.
+   *
+   * The route can be bypassed — the JSON `/api/orders` endpoint exists, and a future
+   * caller (an admin tool, a bot command, a script) will not think about age. There must
+   * be exactly one place where it is impossible to create an order without the
+   * affirmation, and that place is the function that writes the row.
+   *
+   * It is a hard refusal rather than a nullable field, because the whole value of the
+   * policy is that no membership exists without it.
+   */
+  if (input.ageConfirmed !== true) {
+    throw new OrderError(
+      "an order cannot be created without the 18+ affirmation",
+      "invalid",
+    );
+  }
+
   const tier = getTier(input.tier);
   if (tier.availability[input.currency] === "unavailable") {
     throw new OrderError(
@@ -322,8 +401,9 @@ export function createOrder(input: NewOrder): { order: Order; reused: boolean } 
         .prepare(
           `INSERT INTO orders
              (reference_code, idempotency_key, locale, currency, tier, term,
-              amount_minor, rail, name, contact, email, country, discord, source, status)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'created')`,
+              amount_minor, rail, name, contact, email, country, discord, source,
+              age_confirmed_at, status)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'),'created')`,
         )
         .run(
           referenceCode,

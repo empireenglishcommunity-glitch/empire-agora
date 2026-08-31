@@ -27,6 +27,12 @@ services:
       - RAIL_BANK_TRANSFER=${RAIL_BANK_TRANSFER:-}
       - RAIL_CRYPTO=${RAIL_CRYPTO:-}
       - ADMIN_TOKEN=${ADMIN_TOKEN:-}
+      # The human fallback on the sales page and the order confirmation. Missing from
+      # this list until it was caught on deployment day: the code read it, `.env.example`
+      # documented it, and nothing passed it INTO the container — so the "message us"
+      # button would simply never have rendered, with no error anywhere.
+      # `scripts/check-env-wiring.mjs` now gates this whole class of gap.
+      - OWNER_WHATSAPP=${OWNER_WHATSAPP:-}
     volumes:
       # The order ledger. Added in Phase 6 — before this there was deliberately no
       # volume because nothing was stored. Without it, every rebuild discards the

@@ -124,6 +124,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "idempotency_key_required" }, { status: 400 });
   }
 
+  /**
+   * The 18+ affirmation, required here too.
+   *
+   * `createOrder` refuses without it regardless, so this exists to return a NAMED 400
+   * instead of a generic `invalid_order` — a caller integrating against this endpoint
+   * should be told which requirement they missed, not left guessing.
+   */
+  if (body.ageConfirmed !== true) {
+    return NextResponse.json({ error: "age_confirmation_required" }, { status: 400 });
+  }
+
   // ── Create. A throw here becomes a 5xx; it never becomes a fake success. ──
   let created;
   try {
@@ -139,6 +150,7 @@ export async function POST(req: NextRequest) {
       country: str(body.country, 60),
       discord: str(body.discord, 80),
       source: str(body.source, 60),
+      ageConfirmed: true,
       idempotencyKey,
     });
   } catch (err) {
