@@ -46,17 +46,19 @@ jobs:
       - name: Build
         run: npm run build
 
-      # The copy gate cannot see what COMPOSITION produces: a clean ar.json plus
-      # `<p>{t.pay} InstaPay أو Vodafone Cash</p>` is a broken page. This one reads
-      # the rendered HTML, and excludes content already inside <bdi> so it flags the
-      # actual defect — un-isolated Latin — rather than the symptom.
-      - name: Rendered bidi + direction attributes
-        run: npm run check:rendered
-
-      # Bytes on the wire for a first view, measured from the real build. The
-      # audience is on Egyptian mobile data.
-      - name: Performance budget
-        run: npm run check:perf
+      # Boots the real server and fetches the real routes in every currency state.
+      #
+      # This replaced three gates that read build output. The sales page is dynamic
+      # by necessity — it must read a cookie and a geo header to choose a currency —
+      # so there is no prerendered HTML for the one route that matters. Fetching the
+      # live page is strictly better anyway: it tests the bytes a browser receives,
+      # and it exercises the geo-header path that no build artefact could.
+      #
+      # Covers: dir/lang correctness · bidi (un-isolated Latin in Arabic lines) ·
+      # currency isolation (never both EGP and USD in one document) · size budgets
+      # split by ownership so a regression is attributable.
+      - name: Live page gates
+        run: npm run check:live
 
       # Printed into the job log so the governing metric is always derivable from
       # a CI run rather than remembered from a document.

@@ -1,15 +1,232 @@
 {
-  "shell": {
-    "title": "Empire English",
-    "body": "This is the site's foundation. The real page is built in Phase 3.",
-    "tiersHeading": "Plans",
-    "status": "Phase 0 and 1: foundation and the commercial model as code."
+  "meta": {
+    "title": "Speak English with confidence — Empire English Community",
+    "description": "A training system for Arabic speakers: daily practice on the platform, a live session every week, and a level measured precisely against a recognised scale."
   },
-  "common": {
-    "currencyEgypt": "I pay from Egypt",
-    "currencyIntl": "I pay from outside Egypt",
+  "nav": {
+    "plans": "Plans",
+    "how": "How it works",
+    "faq": "FAQ",
+    "start": "Start"
+  },
+  "hero": {
+    "eyebrow": "Empire English Community",
+    "title": "You understand English. But when it is your turn to speak, nothing comes out.",
+    "subtitle": "The problem is not that you do not know enough. It is that you have never practised getting it out loud, every day, with someone correcting you.",
+    "ctaPrimary": "Start with the level test — free",
+    "ctaSecondary": "See the plans",
+    "reassure": "The test is free and commits you to nothing. It measures your level against a recognised scale and tells you where to begin."
+  },
+  "problem": {
+    "eyebrow": "Why nothing has worked so far",
+    "title": "Not intelligence. Method.",
+    "points": [
+      {
+        "title": "Years of study, almost no speaking",
+        "body": "Grammar, vocabulary, endless lectures — all of it input. The skill you actually want is output, and that is precisely what nobody ever made you do."
+      },
+      {
+        "title": "Apps do not make you speak",
+        "body": "You tap the right word and earn a point. Fine. But a real conversation has a person in front of you waiting for your answer, and no app has ever trained you for that."
+      },
+      {
+        "title": "A new tutor every month",
+        "body": "Without one consistent system and real follow-up, you restart from zero each time. Consistency beats intensity — and consistency needs structure."
+      }
+    ]
+  },
+  "system": {
+    "eyebrow": "The system",
+    "title": "Three layers. Only one of them has a schedule.",
+    "intro": "Most people assume the live session is the training. Here it is not. The training happens every day on your own, and the session is for correction and accountability.",
+    "layers": [
+      {
+        "tag": "Daily",
+        "title": "Practice with no appointment",
+        "body": "A practice platform open around the clock. Record yourself, drill pronunciation, review, repeat as often as you like — at three in the morning if that is when you are free."
+      },
+      {
+        "tag": "Daily",
+        "title": "A community that notices you",
+        "body": "A space for students holding your daily tasks, your recordings and your streak. Your presence is visible, and that is what keeps you going."
+      },
+      {
+        "tag": "Weekly",
+        "title": "A live session for correction",
+        "body": "An hour with me every week. Not a lecture — a review of your specific mistakes, pronunciation correction, and next week's plan."
+      }
+    ],
+    "honest": {
+      "title": "One thing said plainly",
+      "body": "The weekly session is a group. You will not spend an hour speaking alone, and anyone promising you that inside a group is not being straight with you. The value of that hour is that an expert hears you, corrects you and holds you to account. The real repetition happens in the two layers above, and those are open to you all day."
+    }
+  },
+  "placement": {
+    "eyebrow": "Start here",
+    "title": "Find out your real level first",
+    "body": "An adaptive test across four skills that returns a specific level, not a rough guess. Free, no commitment, and its result is the basis of any plan that follows.",
+    "cta": "Start the level test",
+    "note": "After the test, if you want to continue, we book a live assessment — and its fee is credited in full against your first month."
+  },
+  "includes": {
+    "eyebrow": "What you get",
+    "title": "What is inside a membership",
+    "items": [
+      {
+        "title": "Daily practice platform",
+        "body": "Lessons, tasks, voice recording and scheduled review."
+      },
+      {
+        "title": "Student community",
+        "body": "Your daily tasks, your recordings and your streak in one place."
+      },
+      {
+        "title": "Weekly live session",
+        "body": "Real correction of your own mistakes, and a plan for the week ahead."
+      },
+      {
+        "title": "Accent Lab",
+        "body": "Training toward a clear, understandable American accent."
+      },
+      {
+        "title": "Regular level measurement",
+        "body": "You know exactly where you are and what the next level needs."
+      },
+      {
+        "title": "Certificate of achievement",
+        "body": "It describes what you can actually do at each level."
+      }
+    ],
+    "levelsTitle": "The full path",
+    "levelsBody": "Six levels, each with an expected duration, a vocabulary target and a speaking target. End to end the path is roughly {weeks} weeks.",
+    "certHonesty": "Our levels are aligned to a recognised scale, not an accredited certificate. We say so plainly."
+  },
+  "plans": {
+    "eyebrow": "Plans",
+    "title": "Choose what your week can actually take",
+    "annualToggle": "Yearly",
+    "monthlyToggle": "Monthly",
+    "annualHint": "Two months free",
     "perMonth": "per month",
     "perYear": "per year",
-    "twoMonthsFree": "two months free"
+    "annualEquivalent": "that is {price} a month",
+    "seatsLeft": "Limited seats",
+    "mostChosen": "Most chosen",
+    "cta": "Join",
+    "ctaQuiet": "Ask before you join",
+    "assessmentNote": "The live assessment fee is {price} — credited in full if you continue with us.",
+    "features": {
+      "practice": "Daily practice platform",
+      "community": "Student community",
+      "weekly": "Weekly group session",
+      "smallGroup": "Weekly small-group session",
+      "oneToOne": "One-to-one sessions per month",
+      "noLive": "No live sessions",
+      "seatCap": "Maximum in a session"
+    },
+    "residencyNote": "Prices in Egyptian pounds are for residents of Egypt. If you pay from abroad, choose international payment."
+  },
+  "how": {
+    "eyebrow": "Joining",
+    "title": "Four steps, all of them clear",
+    "steps": [
+      {
+        "n": "1",
+        "title": "Level test",
+        "body": "Free, and it measures your level precisely."
+      },
+      {
+        "n": "2",
+        "title": "Live assessment",
+        "body": "We talk, set your goal and draw your plan. The fee is credited against your first month."
+      },
+      {
+        "n": "3",
+        "title": "Choose a plan",
+        "body": "Based on the time you can genuinely commit."
+      },
+      {
+        "n": "4",
+        "title": "Pay and get access",
+        "body": "We check the payment ourselves and open the community and platform for you."
+      }
+    ],
+    "manualNote": "Payment is verified by a person, not automatically. So there is a short wait between paying and getting access — we would rather tell you than have you wonder."
+  },
+  "founder": {
+    "eyebrow": "Who is behind this",
+    "title": "Mahmoud Ashri",
+    "body": "I run this system and I teach the sessions myself. Not a sales team and a rotating cast of tutors — the same person every week, and that is deliberate.",
+    "cta": "More about me"
+  },
+  "guarantee": {
+    "eyebrow": "Guarantee",
+    "title": "Attend two sessions. If it is not for you, we refund the rest of the month.",
+    "body": "We are not asking you to risk a whole month. Attend the first two sessions and train with us, and if you decide it does not suit you, we refund the remainder of the month without argument.",
+    "conditionsTitle": "The only condition",
+    "conditions": "That you attended the two sessions and did the tasks. The guarantee assumes you actually tried."
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "The questions that come up most",
+    "items": [
+      {
+        "q": "I am close to a complete beginner. Will this work?",
+        "a": "Yes, and that describes most people who start with us. The path begins at the first level, and the explanation is in Arabic at the start, reducing gradually."
+      },
+      {
+        "q": "I live outside Egypt. Will the times suit me?",
+        "a": "Sessions run on Cairo time, and the Gulf is only an hour or two ahead — so the same times work without anyone staying up late."
+      },
+      {
+        "q": "Will I sound like a native speaker?",
+        "a": "No, and anyone promising you that does not believe it either. The goal is a clear, understandable American accent spoken with confidence. That is realistic and it can be measured."
+      },
+      {
+        "q": "What if I miss a session?",
+        "a": "The daily practice is open and tied to no appointment, so missing a session does not stop your progress. We pick up what you missed in the next one."
+      },
+      {
+        "q": "How much time does it need each day?",
+        "a": "Twenty to thirty minutes a day is enough if you are consistent. Consistency matters more than long, occasional bursts."
+      },
+      {
+        "q": "Why is the price in Egyptian pounds different?",
+        "a": "Deliberately. Prices in pounds are set for income levels in Egypt, and international prices are for residents abroad. The system itself is identical either way."
+      },
+      {
+        "q": "How do I pay?",
+        "a": "From Egypt: mobile wallet or bank transfer. From abroad: international transfer or an online wallet. The details appear once you have chosen a plan."
+      },
+      {
+        "q": "What if I want to stop?",
+        "a": "Membership is monthly and stops when you ask. Your data and progress are kept, so if you come back later you continue from the same point."
+      }
+    ]
+  },
+  "finalCta": {
+    "eyebrow": "Next step",
+    "title": "Start with the level test",
+    "body": "Free, no commitment, and at the end of it you know your level precisely and where to begin.",
+    "cta": "Start the test",
+    "or": "Or ask me anything first"
+  },
+  "footer": {
+    "tagline": "Discipline, belonging, and small wins every day.",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "ip": "Intellectual property",
+    "practice": "Practice platform",
+    "assessment": "Level test",
+    "rights": "All rights reserved.",
+    "honesty": "Our levels are aligned to a recognised scale and are not an accredited certificate."
+  },
+  "sticky": {
+    "from": "From",
+    "cta": "Start"
+  },
+  "currency": {
+    "egypt": "I pay from Egypt",
+    "intl": "I pay from outside Egypt"
   }
 }
