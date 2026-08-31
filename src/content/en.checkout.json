@@ -1,0 +1,142 @@
+{
+  "join": {
+    "eyebrow": "Joining",
+    "title": "Choose your plan and reserve your place",
+    "intro": "Fill in your details and we will then show you the payment details and a reference code for your order. Nothing is charged automatically: you make the transfer yourself, and we check it ourselves.",
+    "planLegend": "Plan",
+    "termLegend": "Billing term",
+    "termAnnual": "Annual",
+    "termMonthly": "Monthly",
+    "railLegend": "Payment method",
+    "railNote": "Choose how you will pay. The account details are deliberately not shown on this page — they appear once your order is recorded.",
+    "rails": {
+      "vodafoneCash": "Vodafone Cash",
+      "instapay": "InstaPay",
+      "paypal": "PayPal",
+      "bankTransfer": "Bank transfer",
+      "crypto": "Cryptocurrency"
+    },
+    "aboutLegend": "About you",
+    "fields": {
+      "name": "Full name",
+      "contact": "WhatsApp number",
+      "contactHint": "The number we will confirm on and follow up with. Include your country code.",
+      "email": "Email — optional",
+      "discord": "Your Discord username — optional"
+    },
+    "submit": "Record my order",
+    "afterSubmit": "Nothing has been charged yet. The next page is where the transfer details are.",
+    "errors": {
+      "generic": "Something went wrong on our side. Try again, and if it keeps happening message us on WhatsApp.",
+      "rate": "Too many attempts in a short time. Wait a moment and try again.",
+      "invalid": "Some details are missing or unreadable. Check the fields and try again.",
+      "currency": "That payment method does not match the currency. Please choose again.",
+      "tier": "That plan is not available on the payment path you chose.",
+      "term": "Choose a billing term: monthly or annual.",
+      "rail": "Choose one of the available payment methods.",
+      "name": "Please enter your full name.",
+      "contact": "Please enter a WhatsApp number we can reach you on.",
+      "rail_unavailable": "No payment method is available right now. Message us on WhatsApp and we will arrange it manually.",
+      "storage": "We could not record your order, and nothing was charged. Try again, and if it keeps happening message us on WhatsApp."
+    }
+  },
+  "confirm": {
+    "eyebrow": "Your order",
+    "title": "Your order is recorded",
+    "intro": "Keep the reference code to hand: write it in the transfer note, and it is how we know the money belongs to your order.",
+    "referenceLegend": "Reference code",
+    "referenceNote": "Put it in the notes field when you transfer. Without it, checking takes longer.",
+    "summaryLegend": "Order summary",
+    "planLabel": "Plan",
+    "termLabel": "Term",
+    "amountLabel": "Amount due",
+    "railLabel": "Payment method",
+    "payLegend": "Transfer details",
+    "accountLabel": "Account",
+    "amountExact": "Transfer exactly the amount shown. Any difference holds the order until we have spoken.",
+    "railSteps": {
+      "vodafoneCash": "Open the wallet app, choose transfer to wallet, and enter the number above.",
+      "instapay": "Open InstaPay or your bank's app and transfer to the payment address above.",
+      "paypal": "Send the amount to the account above and put the reference code in the note.",
+      "bankTransfer": "Transfer from your bank to the details above. International transfers usually take one to three business days.",
+      "crypto": "Send to the address above on exactly the network named. Any other network means the funds are lost and we cannot recover them."
+    },
+    "proofLegend": "Proof of transfer",
+    "proofIntro": "Once you have transferred, upload a picture of the receipt. A screenshot is enough.",
+    "proofField": "Receipt image",
+    "proofSubmit": "Upload receipt",
+    "proofNote": "The image is stored in a locked location on the server, never on a public page, and only the person doing the check sees it.",
+    "proofDone": "We have your receipt. We check it ourselves and reply on WhatsApp.",
+    "proofReplace": "If you uploaded the wrong image, upload the right one and we will use the most recent.",
+    "statusLegend": "Order status",
+    "status": {
+      "created": "Waiting for your transfer",
+      "proof_submitted": "Receipt under review",
+      "verified": "Transfer confirmed — preparing your access",
+      "active": "Your access is open",
+      "cancelled": "Order cancelled",
+      "refunded": "Amount refunded"
+    },
+    "manualNote": "Checking is done by a person, not automatically, so there is a short gap between your transfer and your access. We would rather say so than have you wonder.",
+    "helpLegend": "If something goes wrong",
+    "helpNote": "Send us the reference code and we will find your order straight away.",
+    "whatsappCta": "Message us on WhatsApp",
+    "railUnavailable": "That payment method is not configured on our side right now. Message us on WhatsApp and we will take the transfer manually.",
+    "notFoundTitle": "No order with that code",
+    "notFoundBody": "Check that you copied the whole reference code, or start a new order.",
+    "startOver": "Start a new order",
+    "errors": {
+      "generic": "Something went wrong on our side. Please try again.",
+      "nofile": "No image was chosen. Pick the receipt image and try again.",
+      "toolarge": "That image is too large. Send a screenshot rather than the original file.",
+      "badtype": "That file is not an image we can open. Send a screenshot instead.",
+      "already": "This order has already been checked, so a second receipt is not needed.",
+      "storage": "We could not save the receipt. Try again, and if it keeps happening send it to us on WhatsApp."
+    }
+  },
+  "admin": {
+    "title": "Membership orders",
+    "signInTitle": "Operator sign-in",
+    "signInIntro": "This page is for whoever checks transfers.",
+    "tokenLabel": "Access token",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "empty": "No orders in this list.",
+    "countsLegend": "Status",
+    "columns": {
+      "reference": "Reference",
+      "created": "Date",
+      "buyer": "Student",
+      "plan": "Plan",
+      "amount": "Amount",
+      "rail": "Method",
+      "status": "Status",
+      "proof": "Receipt"
+    },
+    "actions": {
+      "verify": "Confirm money arrived",
+      "activate": "Open access",
+      "cancel": "Cancel order",
+      "refund": "Record refund"
+    },
+    "proofView": "Open receipt",
+    "noProof": "No receipt",
+    "provisionLegend": "Two steps to open access",
+    "provisionNote": "These two steps are done by hand in two different systems. This page only reminds you of them, it does not perform them — writing wrongly into the student database is far worse than a manual step.",
+    "provisionDiscord": "Lift the suspension on the student's record in the bot's data.",
+    "provisionPortal": "Set the student's available stages in the portal.",
+    "verifiedBy": "Confirmed by",
+    "verifiedAt": "Confirmed at",
+    "contactLabel": "Contact",
+    "ok": "Done.",
+    "errors": {
+      "generic": "Something went wrong.",
+      "denied": "That access token is wrong.",
+      "unconfigured": "No access token is configured on the server, so this page is locked for everyone.",
+      "illegal_transition": "That transition is not allowed from the order's current status.",
+      "invalid": "That order does not exist, or the details are unreadable.",
+      "unknown_action": "Unknown action.",
+      "failed": "The action failed. Check the server log."
+    }
+  }
+}

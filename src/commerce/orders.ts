@@ -388,10 +388,39 @@ const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   refunded: [],
 };
 
+/**
+ * Statuses from which a receipt may be attached.
+ *
+ * Deliberately NOT `ALLOWED_TRANSITIONS[status].includes("proof_submitted")`, which is
+ * what this used to be and which was wrong: `proof_submitted` has no self-loop in that
+ * table, so a buyer who uploaded a blurry or wrong screenshot was refused when they
+ * tried to upload the right one — and the refusal surfaced as "this order has already
+ * been checked", which is a lie that ends in a WhatsApp argument about money.
+ *
+ * Attaching a second receipt is a REPLACEMENT, not a transition, so it belongs in its
+ * own rule. Nothing is destroyed by it: proof keys carry a random component, so every
+ * upload lands as a separate file and the earlier evidence survives on disk.
+ *
+ * Once a human has verified or cancelled the order, uploads stop mattering and are
+ * refused — that path is still a genuine conflict.
+ */
+const PROOF_ATTACHABLE: OrderStatus[] = ["created", "proof_submitted"];
+
+/**
+ * The statuses an order may legally move to next.
+ *
+ * Exported so the owner's queue can render only the buttons that would succeed. The
+ * ledger still enforces the rule on the way in — this is so the UI cannot OFFER an
+ * illegal action, not so the UI can be trusted to prevent one.
+ */
+export function allowedNext(status: OrderStatus): readonly OrderStatus[] {
+  return ALLOWED_TRANSITIONS[status];
+}
+
 export function attachProof(referenceCode: string, proofKey: string): Order {
   const order = findByReference(referenceCode);
   if (!order) throw new OrderError("no such order", "invalid");
-  if (!ALLOWED_TRANSITIONS[order.status].includes("proof_submitted")) {
+  if (!PROOF_ATTACHABLE.includes(order.status)) {
     throw new OrderError(
       `cannot attach proof to an order that is "${order.status}"`,
       "conflict",
