@@ -2,7 +2,7 @@ import type { Currency, Tier, Term } from "@/commerce/pricing";
 import { sessionsPerWeek, smallestGroup } from "@/commerce/pricing";
 import { Price, AnnualPerMonth } from "./Price";
 import { Ltr } from "./Ltr";
-import { Badge, Button, Card, Divider } from "./ui";
+import { Badge, ButtonLink, Card, Divider } from "./ui";
 
 /**
  * One plan.
@@ -15,12 +15,15 @@ export function TierCard({
   tier,
   currency,
   term,
+  locale,
   emphasis,
   labels,
 }: {
   tier: Tier;
   currency: Currency;
   term: Term;
+  /** Needed to build the checkout link — every route on this site is locale-scoped. */
+  locale: string;
   emphasis: boolean;
   labels: {
     perMonth: string;
@@ -99,7 +102,27 @@ export function TierCard({
         </p>
       ) : null}
 
-      <Button className="mt-6 w-full">{labels.cta}</Button>
+      {/*
+       * A LINK, not a `<Button>`.
+       *
+       * This was `<Button className="mt-6 w-full">` — a bare `<button>` with no handler,
+       * outside any form. It rendered perfectly and did **absolutely nothing** when
+       * clicked, on the primary action of the most commercially important section of the
+       * page. Every gate passed it: it is valid markup, correct copy, right colour, and
+       * a screenshot cannot show that a button is inert.
+       *
+       * It shipped because the CTA was written before a checkout existed to point at.
+       * Now one does, so the card carries the visitor's resolved currency and term
+       * forward — otherwise `/join` would re-guess them and could offer a different
+       * price than the card they just clicked.
+       */}
+      <ButtonLink
+        href={`/${locale}/join?tier=${tier.id}&c=${currency}&term=${term}`}
+        variant={emphasis ? "primary" : "secondary"}
+        className="mt-6 w-full"
+      >
+        {labels.cta}
+      </ButtonLink>
     </Card>
   );
 }

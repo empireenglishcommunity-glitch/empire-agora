@@ -432,6 +432,44 @@ try {
     console.log(`  form leaks no payment identifier            ✓`);
   }
 
+  // ── 1a. The share card must exist and actually resolve ──
+  /**
+   * A committed PNG referenced from metadata has two independent ways to be wrong: the
+   * tag can be missing, or the tag can point at a file that is not there. Both produce
+   * the same symptom — a WhatsApp share with no picture — and neither shows up anywhere
+   * in a build log. WhatsApp is the primary sharing channel for this audience, so a
+   * silently broken unfurl is a real cost.
+   */
+  for (const locale of ["ar", "en"]) {
+    const html = await (await fetch(`${BASE}/${locale}`)).text();
+    const src = html.match(/<meta property="og:image"[^>]*content="([^"]+)"/)?.[1];
+    if (!src) {
+      fail(`/${locale}: no og:image — a shared link shows no picture`);
+      continue;
+    }
+    if (!/<meta name="twitter:card" content="summary_large_image"/.test(html)) {
+      fail(`/${locale}: twitter:card is not summary_large_image, so the card is cropped square`);
+    }
+    // Dimensions let a client reserve space instead of reflowing or skipping the image.
+    for (const dim of ["og:image:width", "og:image:height"]) {
+      if (!html.includes(`property="${dim}"`)) fail(`/${locale}: og:image is missing ${dim}`);
+    }
+    const res = await fetch(src.startsWith("http") ? src.replace(/^https?:\/\/[^/]+/, BASE) : `${BASE}${src}`);
+    if (res.status !== 200) {
+      fail(`/${locale}: og:image "${src}" returned ${res.status} — the tag points at nothing`);
+    } else {
+      const bytes = Buffer.from(await res.arrayBuffer());
+      // PNG signature, so a 200 serving an HTML error page is not mistaken for success.
+      if (!(bytes[0] === 0x89 && bytes.subarray(1, 4).toString("ascii") === "PNG")) {
+        fail(`/${locale}: og:image "${src}" is not a PNG`);
+      }
+      if (bytes.length > 400 * 1024) {
+        fail(`/${locale}: og:image is ${(bytes.length / 1024).toFixed(0)} KB — too heavy to unfurl reliably`);
+      }
+      console.log(`  og:image /${locale} → ${src} (${(bytes.length / 1024).toFixed(0)} KB) ✓`);
+    }
+  }
+
   // ── 1b. An UNLISTED tier must not be advertised, but must stay buyable by link ──
   /**
    * `vip` is `unlisted` in EGP because Egyptian 1:1 earns about $23/teaching-hour
@@ -460,6 +498,28 @@ try {
     if (/value="nukhba"/.test(await (await fetch(`${BASE}/ar/join?c=EGP&tier=nukhba`)).text())) {
       fail(`/ar/join?c=EGP&tier=nukhba offered a tier that is UNAVAILABLE in EGP`);
     }
+
+    /**
+     * Every plan card must offer a REAL LINK to checkout.
+     *
+     * The CTA used to be `<Button>` — a bare `<button>` with no handler, outside any
+     * form. It rendered perfectly and did nothing at all, on the primary action of the
+     * pricing section. No gate could see it: the markup is valid, the copy is right, and
+     * a screenshot cannot show that a button is inert. So the link is asserted here, per
+     * tier, including that it carries the currency forward — otherwise /join re-guesses
+     * and can quote a different price than the card the visitor clicked.
+     */
+    const sales = await (await fetch(`${BASE}/ar?c=EGP`)).text();
+    for (const tier of ["darb", "asas", "tarkeez"]) {
+      const link = new RegExp(`href="/ar/join\\?tier=${tier}&(?:amp;)?c=EGP`);
+      if (!link.test(sales)) {
+        fail(
+          `/ar?c=EGP: the "${tier}" plan card has no checkout link carrying c=EGP. ` +
+            `An inert CTA on the pricing section is invisible to every other check.`,
+        );
+      }
+    }
+    console.log(`  every plan card links to checkout            ✓`);
 
     const byLink = await (await fetch(`${BASE}/ar/join?c=EGP&tier=vip`)).text();
     if (!/value="vip"/.test(byLink)) {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cairo, Reem_Kufi } from "next/font/google";
+import { socialCard } from "@/lib/metadata";
 import { notFound } from "next/navigation";
 import { locales, localeDir, isLocale, type Locale } from "@/i18n/config";
 import "../globals.css";
@@ -69,7 +70,13 @@ export async function generateMetadata({
       template: `%s · ${BRAND[typed]}`,
     },
     description: DESCRIPTION[typed],
-    openGraph: { type: "website", siteName: BRAND[typed] },
+    /**
+     * Built by `socialCard` rather than written out here. `openGraph` is a SINGLE metadata
+     * field, so any child page that sets its own replaces this one wholesale — which is
+     * how the share image went missing while every other tag looked correct. See
+     * `src/lib/metadata.ts`.
+     */
+    ...socialCard(typed, { title: BRAND[typed], description: DESCRIPTION[typed] }),
     robots: { index: true, follow: true },
   };
 }

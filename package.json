@@ -13,11 +13,12 @@
     "check:bidi": "node --no-warnings scripts/check-bidi.mjs",
     "check:logical": "node --no-warnings scripts/check-logical-properties.mjs",
     "check:proofs": "npx tsx scripts/check-proofs.mjs",
-    "check": "npm run typecheck && npm run check:prices && npm run check:orders && npm run check:proofs && npm run check:bidi && npm run check:logical",
+    "check": "npm run typecheck && npm run check:prices && npm run check:orders && npm run check:proofs && npm run check:identifiers && npm run check:bidi && npm run check:logical",
     "verify": "npm run check && npm run build && npm run check:live",
     "revenue": "tsx scripts/revenue-per-teaching-hour.mjs",
     "check:live": "node --no-warnings scripts/check-live.mjs",
-    "check:orders": "npx tsx scripts/check-orders.mjs"
+    "check:orders": "npx tsx scripts/check-orders.mjs",
+    "check:identifiers": "node --no-warnings scripts/check-no-identifiers.mjs"
   },
   "dependencies": {
     "next": "16.2.11",
