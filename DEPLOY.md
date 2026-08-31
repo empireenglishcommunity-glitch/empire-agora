@@ -83,8 +83,23 @@ Nothing public changes in this step. If it fails, no one notices.
 mkdir -p /opt/empire-agora
 git clone https://github.com/empireenglishcommunity-glitch/empire-agora.git /opt/empire-agora
 cd /opt/empire-agora
+
+# Payment rails and the owner token. NEVER committed — see .env.example.
+cp .env.example .env
+nano .env          # fill RAIL_* and ADMIN_TOKEN (openssl rand -hex 32)
+
 docker compose up -d --build empire-agora
 ```
+
+> **The `orders_data` volume is not optional.** The order ledger is a SQLite file
+> under `DATA_DIR`. Without the volume, every `docker compose up --build` silently
+> discards every order — the worst failure this service can have. `docker compose`
+> creates it from `docker-compose.yml`; just do not remove it, and do not run
+> `docker compose down -v`, which deletes it.
+>
+> A rail with no configured account **refuses orders on that rail** (503) rather than
+> creating an order nobody can pay. So an empty `RAIL_INSTAPAY` does not corrupt
+> anything — it just makes InstaPay unavailable until you set it.
 
 > Build **by service name**. A bare `docker compose up -d --build` on this box has
 > failed before on another project's relative build context.
@@ -248,8 +263,26 @@ cd /opt/empire-agora && docker compose down
   only after CSS parses — a visible swap on the hero text, which is the LCP element.
   The bytes are budgeted and `display: swap` keeps text readable throughout. Worth
   fixing, not worth blocking on.
-- **No `/data` volume.** This app stores nothing yet. Orders arrive in Phase 6 and
-  need a deliberate storage decision then; do not add a bind mount before that.
+- **The checkout is not finished.** The order *capture* path is built and tested —
+  `POST /api/orders` durably records an order and reveals payment instructions. The
+  buyer-facing `/join` flow, proof-image upload and the owner verification queue are
+  not built yet, so until they are, orders can only be created by API and every
+  buyer-facing call to action still hands off to WhatsApp. That is the intended
+  interim state, not a regression.
+
+### Backing up the ledger
+
+The orders volume is the only irreplaceable data this service holds. Add it to the
+box's existing backup routine:
+
+```bash
+docker run --rm -v empire-agora_orders_data:/data -v /root/backups:/out alpine \
+  sh -c 'cp /data/orders.db /out/orders-$(date +%F).db'
+```
+
+SQLite in WAL mode: copying `orders.db` alone can miss the most recent
+transactions. Either stop the container first, or copy `orders.db`, `orders.db-wal`
+and `orders.db-shm` together.
 
 ---
 
