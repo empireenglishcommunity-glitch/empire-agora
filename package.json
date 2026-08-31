@@ -1,0 +1,40 @@
+{
+  "name": "empire-agora",
+  "version": "0.1.0",
+  "private": true,
+  "description": "EEC sales and marketing site — the commercial front door",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "check:prices": "tsx scripts/check-price-invariants.mjs",
+    "check:bidi": "node --no-warnings scripts/check-bidi.mjs",
+    "check:logical": "node --no-warnings scripts/check-logical-properties.mjs",
+    "check:rendered": "node --no-warnings scripts/check-bidi-rendered.mjs",
+    "check:perf": "node --no-warnings scripts/check-perf-budget.mjs",
+    "check": "npm run typecheck && npm run check:prices && npm run check:bidi && npm run check:logical",
+    "verify": "npm run check && npm run build && npm run check:rendered && npm run check:perf",
+    "revenue": "tsx scripts/revenue-per-teaching-hour.mjs"
+  },
+  "dependencies": {
+    "next": "16.2.11",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.11",
+    "tailwindcss": "^4",
+    "tsx": "^4.19.2",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

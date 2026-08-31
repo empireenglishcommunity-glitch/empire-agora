@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # 22.6+ for --experimental-strip-types, which lets the gate scripts
+          # import pricing.ts directly instead of duplicating the numbers.
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Types
+        run: npm run typecheck
+
+      # Fails if an annual price drifts off 10x monthly, if a tier is priced in a
+      # currency it is not sold in, if VIP becomes promoted in Egypt, or if any
+      # tier's revenue per teaching hour inverts. Each corresponds to a decision
+      # that cost real analysis and would be silently undone by a plausible edit.
+      - name: Price invariants
+        run: npm run check:prices
+
+      # Fails on any Arabic line carrying 2+ embedded Latin tokens. First
+      # automated bidi gate in the ecosystem — the bot's bidi_check.py and
+      # EEC-MATERIAL's render probe are both manual.
+      - name: Bidi
+        run: npm run check:bidi
+
+      # This page is RTL by default, so `ml-4` silently mirrors to the wrong side
+      # while every test still passes. One `pl-6` added in a hurry is how an RTL
+      # layout rots.
+      - name: Logical properties
+        run: npm run check:logical
+
+      - name: Build
+        run: npm run build
+
+      # The copy gate cannot see what COMPOSITION produces: a clean ar.json plus
+      # `<p>{t.pay} InstaPay أو Vodafone Cash</p>` is a broken page. This one reads
+      # the rendered HTML, and excludes content already inside <bdi> so it flags the
+      # actual defect — un-isolated Latin — rather than the symptom.
+      - name: Rendered bidi + direction attributes
+        run: npm run check:rendered
+
+      # Bytes on the wire for a first view, measured from the real build. The
+      # audience is on Egyptian mobile data.
+      - name: Performance budget
+        run: npm run check:perf
+
+      # Printed into the job log so the governing metric is always derivable from
+      # a CI run rather than remembered from a document.
+      - name: Revenue per teaching hour
+        run: npm run revenue

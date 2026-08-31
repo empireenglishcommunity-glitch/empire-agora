@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+/* ===========================================================================
+   EEC brand tokens — obsidian + antique gold.
+   Derived by measuring assessment.empireenglish.online on 2026-08-31 (colour
+   frequency in the live document: #c9a84c ×99, #8b7355 ×54, #e8e0d0 ×14,
+   #1a1a2e ×14, #111118 ×14, #cd7f32 ×12, plus gold at 15/20/40/50/60% alpha).
+
+   NOTE: this REPLACES the royal-purple palette used by EEC-MATERIAL/web and
+   described in empire-style-guide.md §3. The guide is being amended to match
+   (tasks.md Phase 0.3) — it is not being ignored.
+   =========================================================================== */
+
+@theme {
+  /* Surfaces, darkest first */
+  --color-obsidian: #0a0a0a;
+  --color-obsidian-2: #111118;
+  --color-midnight: #1a1a2e;
+
+  /* The empire's gold */
+  --color-gold: #c9a84c;
+  --color-gold-bright: #e8d48b;
+  --color-gold-deep: #d4b55c;
+  --color-bronze: #cd7f32;
+
+  /* Text */
+  --color-parchment: #e8e0d0;
+
+  /* Secondary text is #a08a68, NOT the source's #8b7355.
+     #8b7355 on #0a0a0a measures 4.43:1 — below the WCAG AA 4.5:1 floor for body
+     text. On a phone in daylight that is a conversion problem before it is a
+     compliance one. #8b7355 survives only as --color-bronze-dim for large
+     display text and decorative rules, where the 3:1 AA-Large floor applies. */
+  --color-bronze-muted: #a08a68;
+  --color-bronze-dim: #8b7355;
+
+  /* Type. Arabic display cannot be set in a Latin engraved serif, so the system
+     is paired rather than copied:
+       Reem Kufi  — Arabic display: geometric, monumental, reads imperial rather
+                    than devotional (which is why Amiri and Aref Ruqaa were
+                    rejected). Arabic subset only.
+       Cairo      — Arabic + Latin body. Already used across the ecosystem.
+
+     The engraved Latin display face (Cinzel) is deliberately NOT loaded — it cost
+     ~30 KB to serve one wordmark on a page whose display type is Arabic. Latin
+     display now uses Cairo with wide tracking, and the engraved feel lives in the
+     crest SVG. See the layout for the full reasoning. */
+  --font-display-ar: var(--font-reem-kufi), var(--font-cairo), serif;
+  --font-display-latin: var(--font-cairo), system-ui, sans-serif;
+  --font-sans: var(--font-cairo), system-ui, sans-serif;
+}
+
+/* ---------------------------------------------------------------------------
+   Bidi contract.
+
+   EEC-MATERIAL scopes `unicode-bidi: plaintext` to `.lesson-prose` only, so a
+   marketing page there inherits NO bidi handling. This page is wall-to-wall
+   mixed Arabic and Latin — every price, Discord, VIP, Darb, InstaPay — so the
+   contract is declared explicitly and broadly here.
+
+   `plaintext` makes each block choose its own base direction from its first
+   strong character instead of inheriting the page's, which is what keeps closing
+   punctuation at the correct end. `text-align: start` (never left/right) keeps it
+   locale-agnostic. Must stay in sync with EEC-MATERIAL's tools/pdf/book.css.
+   --------------------------------------------------------------------------- */
+:where(p, li, td, th, blockquote, h1, h2, h3, h4, h5, h6, dt, dd, figcaption) {
+  unicode-bidi: plaintext;
+  text-align: start;
+}
+
+/* Isolate embedded Latin runs inside Arabic. Paired with the <Ltr> component so
+   an Arabic line never carries two or more raw Latin islands. */
+bdi {
+  unicode-bidi: isolate;
+}
+
+html {
+  color-scheme: dark;
+  background-color: var(--color-obsidian);
+}
+
+body {
+  background-color: var(--color-obsidian);
+  color: var(--color-parchment);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Atmosphere: a radial vignette, CSS-only, never on the critical path.
+   The particles and scroll reveals of the source site are deliberately NOT
+   reproduced as content gates — see design §2.4. */
+.atmosphere {
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 50% -10%,
+      color-mix(in srgb, var(--color-gold) 8%, transparent),
+      transparent 70%
+    ),
+    var(--color-obsidian);
+}
+
+/* Gold gradient display text — the source site's signature treatment. */
+.text-gold-gradient {
+  background: linear-gradient(
+    180deg,
+    var(--color-gold-bright) 0%,
+    var(--color-gold) 55%,
+    var(--color-gold-deep) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Hairline gold rule used above section eyebrows. */
+.rule-gold {
+  border-color: color-mix(in srgb, var(--color-gold) 20%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

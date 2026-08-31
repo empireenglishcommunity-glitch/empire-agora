@@ -1,0 +1,38 @@
+# Secrets — this project's history includes real leaked credentials.
+# Never commit a secret; reference the env var name or server path instead.
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Test / tooling output
+coverage/
+.turbo/
+playwright-report/
+test-results/
+
+# Payment proofs must NEVER be committed — they are financial PII.
+# They live in R2 behind an authenticated endpoint (requirements.md R12.2).
+proofs/
+*.proof.*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.idea/
+*.swp
