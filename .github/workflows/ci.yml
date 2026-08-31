@@ -34,6 +34,13 @@ jobs:
       # Fails on any Arabic line carrying 2+ embedded Latin tokens. First
       # automated bidi gate in the ecosystem — the bot's bidi_check.py and
       # EEC-MATERIAL's render probe are both manual.
+      # The money path. Tested against a REAL SQLite file, not a mock — durability
+      # that has only been tested in memory has not been tested. Covers idempotency
+      # under retry, server-side pricing (a caller-supplied amount is ignored),
+      # refused illegal transitions, and the durability pragmas themselves.
+      - name: Order ledger
+        run: npm run check:orders
+
       - name: Bidi
         run: npm run check:bidi
 

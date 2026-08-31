@@ -1,0 +1,19 @@
+<!--
+  Favicon. Next's App Router picks up `app/icon.svg` automatically and emits the
+  <link> tags, so there is no manifest to maintain.
+
+  This is the crest from `components/Crest.tsx`, simplified for tiny sizes: the outer
+  ring, the crown and the E monogram survive; the laurel does not, because at 16px it
+  collapses into noise. Same reduction was made for the rank-card emblem, and for the
+  same reason.
+
+  Gold is hard-coded rather than `currentColor` — a favicon has no inherited context.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="10" fill="#0a0a0a"/>
+  <g fill="none" stroke="#c9a84c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="32" cy="32" r="25" opacity="0.5"/>
+    <path d="M20 26 L24.5 17 L28.5 23 L32 14 L35.5 23 L39.5 17 L44 26 Z"/>
+    <path d="M26 33 H39 M26 33 V45 M26 39 H36 M26 45 H39" stroke-width="3.4"/>
+  </g>
+</svg>

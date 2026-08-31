@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
+import { socialCard } from "@/lib/metadata";
 import { getDictionary } from "@/i18n/dictionaries";
 import { resolveCurrency } from "@/lib/currency";
 import { promotedTiers, ASSESSMENT, type Term } from "@/commerce/pricing";
 import { totalWeeks } from "@/curriculum/cefr";
 import { Crest } from "@/components/Crest";
+import { FounderPortrait } from "@/components/FounderPortrait";
 import { Ltr } from "@/components/Ltr";
 import { Amount } from "@/components/Price";
 import { TierCard } from "@/components/TierCard";
@@ -28,10 +30,25 @@ const PLACEMENT_URL = "https://practice.empireenglish.online/placement/";
 const PRACTICE_URL = "https://practice.empireenglish.online";
 const ASSESSMENT_URL = "https://assessment.empireenglish.online";
 const FOUNDER_URL = "https://mahmoud-ashr.empireenglish.online";
-// Phase 6 replaces this with the assisted checkout. Until then every CTA hands off
-// to WhatsApp, which is how sales already close — so the page earns from day one
-// instead of waiting for the money code.
-const WHATSAPP_URL = "https://wa.me/201041215787";
+/**
+ * The human fallback, from the environment — never a literal.
+ *
+ * This was a hardcoded `wa.me/<number>` link, and the number was also the Vodafone Cash
+ * account. `commerce/rails.ts` keeps every payment identifier out of this repository on
+ * purpose ("a payment number in a public repo is grep-able forever"), and a literal here
+ * quietly undid that for the one number that matters most. Publishing it on the page is
+ * intended; committing it is a different question, and the rule already had an answer.
+ *
+ * `scripts/check-no-identifiers.mjs` now enforces it — and its first catch was an earlier
+ * draft of THIS COMMENT, which quoted the number while explaining why not to. A comment in
+ * a public repo is exactly as grep-able as code.
+ *
+ * Returns null when unset, and the caller renders nothing rather than a dead link.
+ */
+function whatsappUrl(): string | null {
+  const digits = process.env.OWNER_WHATSAPP?.replace(/[^\d]/g, "");
+  return digits ? `https://wa.me/${digits}` : null;
+}
 
 export async function generateMetadata({
   params,
@@ -44,7 +61,9 @@ export async function generateMetadata({
   return {
     title: t.meta.title,
     description: t.meta.description,
-    openGraph: { title: t.meta.title, description: t.meta.description },
+    // Spread, never a bare `openGraph` literal: that would replace the layout's and
+    // drop the share image. See src/lib/metadata.ts.
+    ...socialCard(locale as Locale, { title: t.meta.title, description: t.meta.description }),
   };
 }
 
@@ -69,6 +88,7 @@ export default async function Home({
   const term: Term = sp.term === "monthly" ? "monthly" : "annual";
 
   const tiers = promotedTiers(currency);
+  const whatsapp = whatsappUrl();
   const cheapest = tiers[0];
 
   return (
@@ -233,6 +253,7 @@ export default async function Home({
                 tier={tier}
                 currency={currency}
                 term={term}
+                locale={locale}
                 emphasis={tier.id === "tarkeez"}
                 labels={{
                   perMonth: t.plans.perMonth,
@@ -292,10 +313,7 @@ export default async function Home({
         <Section>
           <Eyebrow>{t.founder.eyebrow}</Eyebrow>
           <div className="grid items-center gap-8 sm:grid-cols-[200px_1fr]">
-            <div className="h-[260px] w-[180px] overflow-hidden rounded-sm border border-(--color-gold)/30 bg-(--color-midnight)">
-              {/* Sourced from assets/founder/. Converted to web formats in Phase 8;
-                  the frame is reserved now so the layout is already correct. */}
-            </div>
+            <FounderPortrait alt={t.founder.portraitAlt} />
             <div>
               <Display as="h3">{t.founder.title}</Display>
               <p className="mt-4 max-w-xl leading-relaxed text-(--color-text-muted)">
@@ -352,9 +370,11 @@ export default async function Home({
           <Lead className="mt-5 max-w-xl">{t.finalCta.body}</Lead>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <ButtonLink href={PLACEMENT_URL}>{t.finalCta.cta}</ButtonLink>
-            <ButtonLink href={WHATSAPP_URL} variant="secondary">
-              {t.finalCta.or}
-            </ButtonLink>
+            {whatsapp ? (
+              <ButtonLink href={whatsapp} variant="secondary">
+                {t.finalCta.or}
+              </ButtonLink>
+            ) : null}
           </div>
         </Section>
 
@@ -402,7 +422,9 @@ export default async function Home({
               />
             </span>
           </div>
-          <ButtonLink href={PLACEMENT_URL} className="px-5 py-2.5 text-xs">
+          {/* Points at checkout, not back at the free level test. Someone who has
+              scrolled past the plans has already had the free offer twice. */}
+          <ButtonLink href={`/${locale}/join?c=${currency}`} className="px-5 py-2.5 text-xs">
             {t.sticky.cta}
           </ButtonLink>
         </div>

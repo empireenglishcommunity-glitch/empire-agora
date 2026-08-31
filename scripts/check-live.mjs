@@ -23,13 +23,31 @@
  */
 
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 
 const ROOT = process.cwd();
 const PORT = Number(process.env.CHECK_PORT ?? 3987);
 const BASE = `http://127.0.0.1:${PORT}`;
+
+/**
+ * The server under test gets a THROWAWAY ledger and fake credentials.
+ *
+ * It must never inherit a real `DATA_DIR`: this gate creates orders, and pointing it at
+ * production data would write test rows into the money ledger. The rails are given
+ * obviously-fake values because the gate asserts those exact strings are ABSENT from the
+ * public form markup — a real number here would make that assertion untrustworthy.
+ */
+const DATA_DIR = mkdtempSync(join(tmpdir(), "agora-live-"));
+const FAKE = {
+  RAIL_VODAFONE_CASH: "01000000000-FAKE-VC",
+  RAIL_INSTAPAY: "fake-instapay@test.invalid",
+  RAIL_PAYPAL: "fake-paypal@test.invalid",
+  ADMIN_TOKEN: "live-check-token-0123456789abcdef",
+  OWNER_WHATSAPP: "201000000000",
+};
 
 const ARABIC_CHAR =
   /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
@@ -285,7 +303,11 @@ if (!existsSync(join(ROOT, ".next"))) {
 const server = spawn(
   process.execPath,
   [join(ROOT, "node_modules", "next", "dist", "bin", "next"), "start", "-p", String(PORT)],
-  { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"] },
+  {
+    cwd: ROOT,
+    stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, ...FAKE, DATA_DIR, ORDERS_DB: join(DATA_DIR, "orders.db") },
+  },
 );
 
 let exitCode = 0;
@@ -317,6 +339,17 @@ try {
     { label: "/ar/privacy", path: "/ar/privacy", locale: "ar" },
     { label: "/en/terms", path: "/en/terms", locale: "en" },
     { label: "/en/privacy", path: "/en/privacy", locale: "en" },
+    // The checkout form. It renders prices, so it gets the same currency-isolation
+    // scrutiny as the sales page — a buyer who reaches this page having been quoted one
+    // currency must not be charged in the other.
+    { label: "/ar/join", path: "/ar/join", locale: "ar", expectPrices: true },
+    { label: "/ar/join?c=EGP", path: "/ar/join?c=EGP", locale: "ar", expectPrices: true, expectCurrency: "EGP" },
+    { label: "/ar/join?c=USD", path: "/ar/join?c=USD", locale: "ar", expectPrices: true, expectCurrency: "USD" },
+    { label: "/ar/join (geo: EG)", path: "/ar/join", locale: "ar", headers: { "cf-ipcountry": "EG" }, expectPrices: true, expectCurrency: "EGP" },
+    { label: "/en/join", path: "/en/join", locale: "en", expectPrices: true },
+    // The queue, unauthenticated. Must be the sign-in form, never the orders.
+    { label: "/ar/admin/orders", path: "/ar/admin/orders", locale: "ar" },
+    { label: "/en/admin/orders", path: "/en/admin/orders", locale: "en" },
     {
       label: "/ar/design",
       path: "/ar/design",
@@ -357,6 +390,307 @@ try {
 
   console.log(`\n  ${arabicLines} Arabic lines checked for bidi across ${targets.length} responses.`);
 
+  // -------------------------------------------------------------------------
+  // Checkout, end to end, over real HTTP
+  // -------------------------------------------------------------------------
+  /**
+   * Everything below drives the actual money path through the actual server: create an
+   * order with a form POST, follow the redirect, read the confirmation page, then try to
+   * reach the owner's endpoints without a session.
+   *
+   * This is the only place any of it is exercised as a whole. The unit gates prove the
+   * ledger and the receipt store behave; they cannot prove that a form field name matches
+   * what the route reads, or that a redirect goes where the page expects. Those are
+   * exactly the defects this project keeps shipping — the assessment app returned a
+   * constant 18/30 to every student for weeks because a page sent `transcription` where
+   * the route read `transcript`.
+   */
+  console.log(`\nCheckout flow (real POSTs against the running server)\n`);
+
+  const post = (path, body, headers = {}) =>
+    fetch(`${BASE}${path}`, {
+      method: "POST",
+      body: new URLSearchParams(body),
+      headers: { "content-type": "application/x-www-form-urlencoded", ...headers },
+      redirect: "manual",
+    });
+
+  // ── 1. The form must not leak payment details ──
+  // A payment number on a public page is an impersonation vector: a third party
+  // screenshots the page with their own number substituted and collects real payments.
+  {
+    const html = await (await fetch(`${BASE}/ar/join?c=EGP`)).text();
+    for (const [name, value] of Object.entries(FAKE)) {
+      if (name === "ADMIN_TOKEN" || !value) continue;
+      if (html.includes(value)) {
+        fail(
+          `/ar/join leaked ${name} ("${value}") into public markup. Payment details must ` +
+            `appear only after an order exists (R5.7).`,
+        );
+      }
+    }
+    console.log(`  form leaks no payment identifier            ✓`);
+  }
+
+  // ── 1a. The share card must exist and actually resolve ──
+  /**
+   * A committed PNG referenced from metadata has two independent ways to be wrong: the
+   * tag can be missing, or the tag can point at a file that is not there. Both produce
+   * the same symptom — a WhatsApp share with no picture — and neither shows up anywhere
+   * in a build log. WhatsApp is the primary sharing channel for this audience, so a
+   * silently broken unfurl is a real cost.
+   */
+  for (const locale of ["ar", "en"]) {
+    const html = await (await fetch(`${BASE}/${locale}`)).text();
+    const src = html.match(/<meta property="og:image"[^>]*content="([^"]+)"/)?.[1];
+    if (!src) {
+      fail(`/${locale}: no og:image — a shared link shows no picture`);
+      continue;
+    }
+    if (!/<meta name="twitter:card" content="summary_large_image"/.test(html)) {
+      fail(`/${locale}: twitter:card is not summary_large_image, so the card is cropped square`);
+    }
+    // Dimensions let a client reserve space instead of reflowing or skipping the image.
+    for (const dim of ["og:image:width", "og:image:height"]) {
+      if (!html.includes(`property="${dim}"`)) fail(`/${locale}: og:image is missing ${dim}`);
+    }
+    const res = await fetch(src.startsWith("http") ? src.replace(/^https?:\/\/[^/]+/, BASE) : `${BASE}${src}`);
+    if (res.status !== 200) {
+      fail(`/${locale}: og:image "${src}" returned ${res.status} — the tag points at nothing`);
+    } else {
+      const bytes = Buffer.from(await res.arrayBuffer());
+      // PNG signature, so a 200 serving an HTML error page is not mistaken for success.
+      if (!(bytes[0] === 0x89 && bytes.subarray(1, 4).toString("ascii") === "PNG")) {
+        fail(`/${locale}: og:image "${src}" is not a PNG`);
+      }
+      if (bytes.length > 400 * 1024) {
+        fail(`/${locale}: og:image is ${(bytes.length / 1024).toFixed(0)} KB — too heavy to unfurl reliably`);
+      }
+      console.log(`  og:image /${locale} → ${src} (${(bytes.length / 1024).toFixed(0)} KB) ✓`);
+    }
+  }
+
+  // ── 1b. An UNLISTED tier must not be advertised, but must stay buyable by link ──
+  /**
+   * `vip` is `unlisted` in EGP because Egyptian 1:1 earns about $23/teaching-hour
+   * against about $45 for Egyptian group — worse than the tier it upgrades from. The
+   * price gate asserts that relationship; it cannot see WHERE a tier is offered, and
+   * "unlisted" was originally implemented as "still in the array", so the EGP form
+   * listed VIP as the fourth of four options. Found by rendering the page and reading
+   * it. Both halves are asserted here, because either one alone is satisfiable by doing
+   * nothing: hiding it everywhere, or showing it everywhere.
+   */
+  {
+    const plain = await (await fetch(`${BASE}/ar/join?c=EGP`)).text();
+    const plans = plain.split("</fieldset>")[0]; // the plan radio group only
+    if (/value="vip"/.test(plans)) {
+      fail(
+        `/ar/join?c=EGP advertises the "vip" tier, which is unlisted in EGP. Rendering a ` +
+          `tier in the default radio group IS advertising it — route Egyptians to tarkeez.`,
+      );
+    }
+    for (const promoted of ["darb", "asas", "tarkeez"]) {
+      if (!new RegExp(`value="${promoted}"`).test(plans)) {
+        fail(`/ar/join?c=EGP is missing the promoted tier "${promoted}"`);
+      }
+    }
+    // Unavailable, not merely unlisted: it must be absent even with an explicit link.
+    if (/value="nukhba"/.test(await (await fetch(`${BASE}/ar/join?c=EGP&tier=nukhba`)).text())) {
+      fail(`/ar/join?c=EGP&tier=nukhba offered a tier that is UNAVAILABLE in EGP`);
+    }
+
+    /**
+     * Every plan card must offer a REAL LINK to checkout.
+     *
+     * The CTA used to be `<Button>` — a bare `<button>` with no handler, outside any
+     * form. It rendered perfectly and did nothing at all, on the primary action of the
+     * pricing section. No gate could see it: the markup is valid, the copy is right, and
+     * a screenshot cannot show that a button is inert. So the link is asserted here, per
+     * tier, including that it carries the currency forward — otherwise /join re-guesses
+     * and can quote a different price than the card the visitor clicked.
+     */
+    const sales = await (await fetch(`${BASE}/ar?c=EGP`)).text();
+    for (const tier of ["darb", "asas", "tarkeez"]) {
+      const link = new RegExp(`href="/ar/join\\?tier=${tier}&(?:amp;)?c=EGP`);
+      if (!link.test(sales)) {
+        fail(
+          `/ar?c=EGP: the "${tier}" plan card has no checkout link carrying c=EGP. ` +
+            `An inert CTA on the pricing section is invisible to every other check.`,
+        );
+      }
+    }
+    console.log(`  every plan card links to checkout            ✓`);
+
+    const byLink = await (await fetch(`${BASE}/ar/join?c=EGP&tier=vip`)).text();
+    if (!/value="vip"/.test(byLink)) {
+      fail(
+        `/ar/join?c=EGP&tier=vip did not offer the unlisted tier. It is unadvertised, ` +
+          `not forbidden — a direct link must still be able to buy it.`,
+      );
+    }
+    console.log(`  unlisted tier: hidden by default, buyable by link ✓`);
+  }
+
+  // ── 2. Create an order ──
+  let reference = null;
+  {
+    const res = await post("/api/orders/submit", {
+      locale: "ar",
+      currency: "EGP",
+      tier: "asas",
+      term: "monthly",
+      rail: "vodafone_cash",
+      name: "طالب الاختبار",
+      contact: "+201000000000",
+      idempotencyKey: `live-check-${Date.now()}`,
+    });
+
+    if (res.status !== 303) {
+      fail(`POST /api/orders/submit returned ${res.status}, expected a 303 redirect`);
+    }
+    const location = res.headers.get("location") ?? "";
+    const m = location.match(/\/ar\/join\/(EEC-[A-Z0-9-]+)$/);
+    if (!m) {
+      fail(`order submit redirected to "${location}" — expected /ar/join/<reference>`);
+    } else {
+      reference = m[1];
+      console.log(`  order created → ${reference}          ✓`);
+    }
+  }
+
+  // ── 3. The confirmation page reveals payment details, and no buyer PII ──
+  if (reference) {
+    const res = await fetch(`${BASE}/ar/join/${reference}`);
+    const html = await res.text();
+    const page = { label: `/ar/join/${reference}`, locale: "ar", html, expectCurrency: "EGP", expectPrices: true };
+
+    if (res.status !== 200) fail(`${page.label}: HTTP ${res.status}`);
+    checkDirection(page, fail);
+    checkBidi(page, fail);
+    checkCurrencyIsolation(page, fail);
+
+    if (!html.includes(reference)) {
+      fail(`${page.label}: the reference code is not on the page the buyer must copy it from`);
+    }
+    if (!html.includes(FAKE.RAIL_VODAFONE_CASH)) {
+      fail(
+        `${page.label}: the payment account is MISSING. The buyer has an order and no way ` +
+          `to pay it — silent, and only discovered by a customer who never pays.`,
+      );
+    }
+    // PII is deliberately absent: a reference code is a weak secret (~900k combinations
+    // with guessable month/tier/currency segments), so it must not gate a name or phone.
+    if (html.includes("طالب الاختبار") || html.includes("+201000000000")) {
+      fail(
+        `${page.label}: renders buyer PII. The reference code is guessable enough that it ` +
+          `must not be the only thing protecting a name and a phone number.`,
+      );
+    }
+    console.log(`  confirmation page: code + account, no PII   ✓`);
+  }
+
+  // ── 4. Idempotency over real HTTP ──
+  if (reference) {
+    const key = `live-check-idem-${Date.now()}`;
+    const body = {
+      locale: "ar", currency: "EGP", tier: "asas", term: "monthly",
+      rail: "vodafone_cash", name: "مكرر", contact: "+201000000001", idempotencyKey: key,
+    };
+    const a = await post("/api/orders/submit", body);
+    const b = await post("/api/orders/submit", body);
+    const refA = (a.headers.get("location") ?? "").split("/").pop();
+    const refB = (b.headers.get("location") ?? "").split("/").pop();
+    if (!refA || refA !== refB) {
+      fail(
+        `a double-submitted form produced two different orders (${refA} vs ${refB}). ` +
+          `One intent must never become two charges.`,
+      );
+    } else {
+      console.log(`  double submit → one order                   ✓`);
+    }
+  }
+
+  // ── 5. A rail that does not belong to the currency is refused ──
+  {
+    const res = await post("/api/orders/submit", {
+      locale: "ar", currency: "USD", tier: "asas", term: "monthly",
+      rail: "vodafone_cash", // Egypt-only: it is also the geo gate
+      name: "x", contact: "y", idempotencyKey: `live-check-mismatch-${Date.now()}`,
+    });
+    const loc = res.headers.get("location") ?? "";
+    if (!loc.includes("e=rail")) {
+      fail(`paying USD over an Egypt-only rail must be refused; redirected to "${loc}"`);
+    } else {
+      console.log(`  USD over an Egypt-only rail refused        ✓`);
+    }
+  }
+
+  // ── 6. THE OWNER'S ENDPOINTS MUST BE SHUT ──
+  // The highest-consequence assertion here. These serve names, phone numbers and
+  // payment receipts.
+  {
+    const signInForm = await (await fetch(`${BASE}/ar/admin/orders`)).text();
+    if (!/name="token"/.test(signInForm)) {
+      fail(
+        `/ar/admin/orders did not render a sign-in form for an unauthenticated visitor. ` +
+          `If it rendered the queue instead, the guard is inverted.`,
+      );
+    }
+    if (reference && signInForm.includes(reference)) {
+      fail(`/ar/admin/orders LEAKED order ${reference} to an unauthenticated visitor`);
+    }
+
+    const shut = [
+      ["POST", `/api/admin/orders/${reference ?? "EEC-2609-ASEG-7K3Q"}`],
+      ["GET", `/api/admin/proof/${reference ?? "EEC-2609-ASEG-7K3Q"}-0123456789abcdef.jpg`],
+    ];
+    for (const [method, path] of shut) {
+      const res =
+        method === "POST"
+          ? await post(path, { action: "verify", locale: "ar" })
+          : await fetch(`${BASE}${path}`, { redirect: "manual" });
+      if (res.status !== 404) {
+        fail(`${method} ${path} returned ${res.status} without a session — must be 404`);
+      }
+    }
+    console.log(`  admin routes shut without a session        ✓`);
+  }
+
+  // ── 7. And OPEN with one, so the refusals above are not vacuous ──
+  {
+    const login = await post("/api/admin/session", { locale: "ar", token: FAKE.ADMIN_TOKEN });
+    const cookie = (login.headers.get("set-cookie") ?? "").split(";")[0];
+    if (!cookie.startsWith("eec_admin=")) {
+      fail(`signing in with the correct token set no session cookie (got "${cookie}")`);
+    } else {
+      const html = await (await fetch(`${BASE}/ar/admin/orders`, { headers: { cookie } })).text();
+      if (reference && !html.includes(reference)) {
+        fail(
+          `the authenticated queue does not list order ${reference}. The guard refuses ` +
+            `everyone, including the owner — which passes every "must be shut" check above.`,
+        );
+      }
+      if (/name="token"/.test(html)) {
+        fail(`the authenticated queue still rendered the sign-in form — the session is not being read`);
+      }
+      const page = { label: "/ar/admin/orders (authed)", locale: "ar", html };
+      checkDirection(page, fail);
+      checkBidi(page, fail);
+      console.log(`  authenticated queue lists the order        ✓`);
+    }
+
+    const wrong = await post("/api/admin/session", { locale: "ar", token: "wrong-token-wrong-token" });
+    if (!(wrong.headers.get("location") ?? "").includes("e=denied")) {
+      fail(`signing in with a wrong token did not report denial`);
+    }
+    // A cookie carrying a wrong value must not be honoured either.
+    const forged = await fetch(`${BASE}/ar/admin/orders`, { headers: { cookie: "eec_admin=not-the-token" } });
+    if (!/name="token"/.test(await forged.text())) {
+      fail(`a FORGED session cookie was accepted — the cookie value is not being verified`);
+    }
+    console.log(`  wrong token and forged cookie refused      ✓`);
+  }
+
   if (failures.length) {
     console.error(`\n✗ ${failures.length} failure(s):\n`);
     for (const f of failures) console.error(`  • ${f}\n`);
@@ -366,6 +700,7 @@ try {
   }
 } finally {
   server.kill("SIGTERM");
+  rmSync(DATA_DIR, { recursive: true, force: true });
 }
 
 process.exit(exitCode);

@@ -1,6 +1,7 @@
 # EEC Commercial Model & Sales Page — Implementation Plan
 
-> **Status (2026-08-31): PHASES 0–4 BUILT. Phase 5 PREPARED but NOT EXECUTED.**
+> **Status (2026-08-31): PHASES 0–4 BUILT · Phase 5 PREPARED, NOT EXECUTED ·
+> Phase 6 PART-BUILT (order capture works; the buyer-facing flow does not).**
 > The page exists and sells. It is not deployed, and deploying it needs SSH and a
 > Cloudflare token this session did not have — see `DEPLOY.md`.
 >
@@ -48,7 +49,11 @@
 >   sending it to third-party processors is not something to leave undecided.
 > - The **proof** and **testimonials** sections are not built at all (§2 and §10 of
 >   design §3) — correctly, since there is no consented content yet.
-> - The founder photo frame is reserved but **no image is wired** (Phase 8).
+> - ~~The founder photo frame is reserved but no image is wired.~~ **DONE** — one
+>   portrait wired as pre-optimised AVIF/WebP/JPEG (7.5/9.7/20.6 KB), plus a favicon
+>   from the crest. `next/image` deliberately not used: it needs `sharp` at runtime,
+>   and adding a native image pipeline to a 384 MB container to resize one static
+>   portrait is a bad trade.
 > - Seat display shows a tier's **cap**, not seats *remaining*. Honest as worded
 >   ("limited seats — 12") but 4.4 wants a derived count.
 >
@@ -327,16 +332,21 @@ on its own hostname, and nothing that worked before is broken.
 
 - [ ] 6.1 `/[locale]/join` flow: currency → tier → term → identity → rail.
       `Req: R5.1`
-- [ ] 6.2 Reference codes `EEC-YYMM-<TIER><CUR>-<4>`, unambiguous alphabet.
+- [x] 6.2 Reference codes `EEC-YYMM-<TIER><CUR>-<4>`, unambiguous alphabet.
       `Req: R5.2`
-- [ ] 6.3 `POST /api/orders` — **synchronous, durable, fails loudly.** Explicitly
+- [x] 6.3 `POST /api/orders` — **synchronous, durable, fails loudly.** Explicitly
       not the `api/waitlist` best-effort pattern that returns `{ok:true}` on a
       failed write. `Req: R5.3`
-- [ ] 6.4 Idempotency key; retries and double-submits return the original order.
+- [x] 6.4 Idempotency key; retries and double-submits return the original order.
       `Req: R5.4`
-- [ ] 6.5 `orders` storage per design §7.1 (D1, or the VPS equivalent on the
-      alternate path). `Req: R6.1`
-- [ ] 6.6 Rail instructions revealed **only after** an order exists — the Vodafone
+- [x] 6.5 **`orders` storage built — SQLite via `node:sqlite`, NOT D1.** D1 and R2
+      were premised on Cloudflare Pages; from a VPS container they would put an
+      external API call, a network dependency and a token on the money path to store
+      a few hundred rows a year. `node:sqlite` is built into Node 22 (verified
+      unflagged in `node:22-alpine`), so this adds zero dependencies and no native
+      build, with real transactions and a real fsync. WAL + `synchronous = FULL`.
+      `Req: R6.1`
+- [x] 6.6 Rail instructions revealed **only after** an order exists — the Vodafone
       Cash number is never in public markup. `Req: R5.7`
 - [ ] 6.7 Proof upload: one tap on mobile, type/size validated, stored in **R2**
       under a non-guessable key, never on a public path. `Req: R5.5, R12.2, R12.3`
@@ -344,7 +354,7 @@ on its own hostname, and nothing that worked before is broken.
       `Req: R5.5, R11.4`
 - [ ] 6.9 Owner verification queue — authenticated, fails closed. Human approval
       preserved; no auto-grant on unverified proof. `Req: R5.6, R12.6`
-- [ ] 6.10 Rate limiting on order and admin endpoints. `Req: R12.4`
+- [x] 6.10 Rate limiting on order and admin endpoints. `Req: R12.4`
 - [ ] 6.11 EGP installments (2–3 scheduled transfers) representable.
       `Req: R5.8`
 - [ ] 6.12 Provisioning handoff on verification: Discord access, tier-appropriate
@@ -382,7 +392,7 @@ data — the two questions he could not answer at the start of this work.
 
 - [ ] 8.1 Two consented before/after audio clips → §2 "30-second proof." From the
       1,095 committed broadcast clips or the 9,360 R2 speech clips. `Req: R9.3`
-- [ ] 8.2 Founder photos → §9. **Use two of the four:** the strongest formal
+- [x] 8.2 Founder photos → §9. **Use two of the four:** the strongest formal
       portrait in the founder section, one candid teaching shot as support.
       `next/image`, explicit dimensions, AVIF/WebP, ≤ 120 KB each, faces legible
       at 360 px. Not in the hero — a photo there beats the LCP text and pushes the

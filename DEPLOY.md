@@ -83,8 +83,34 @@ Nothing public changes in this step. If it fails, no one notices.
 mkdir -p /opt/empire-agora
 git clone https://github.com/empireenglishcommunity-glitch/empire-agora.git /opt/empire-agora
 cd /opt/empire-agora
+
+# Payment rails and the owner token. NEVER committed — see .env.example.
+cp .env.example .env
+nano .env          # fill RAIL_*, OWNER_WHATSAPP, and ADMIN_TOKEN (openssl rand -hex 32)
+
 docker compose up -d --build empire-agora
 ```
+
+> **The `orders_data` volume is not optional.** The order ledger is a SQLite file
+> under `DATA_DIR`. Without the volume, every `docker compose up --build` silently
+> discards every order — the worst failure this service can have. `docker compose`
+> creates it from `docker-compose.yml`; just do not remove it, and do not run
+> `docker compose down -v`, which deletes it.
+>
+> A rail with no configured account **refuses orders on that rail** (503) rather than
+> creating an order nobody can pay. So an empty `RAIL_INSTAPAY` does not corrupt
+> anything — it just makes InstaPay unavailable until you set it. The `/join` form
+> does not even offer an unconfigured rail, and if *every* rail is unset it says so
+> instead of showing a form that cannot succeed.
+>
+> `ADMIN_TOKEN` **fails closed**: unset, or shorter than 16 characters, locks the
+> order queue for everyone rather than opening it to everyone.
+>
+> **Two different variables share this name across two apps.** `ADMIN_TOKEN` in
+> `/opt/empire-agora/.env` guards the *order queue*; the `$ADMIN_TOKEN` used in step 3
+> to fetch the Teacher's Edition is the *portal's*, from a different `.env`. Do not
+> reuse one value for both — a token that opens the coursebook should not also settle
+> payments.
 
 > Build **by service name**. A bare `docker compose up -d --build` on this box has
 > failed before on another project's relative build context.
@@ -99,6 +125,28 @@ docker compose ps                                    # empire-agora "Up"
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8090/ar          # 200
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8090/ar/terms    # 200
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8090/ar/privacy  # 200
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8090/ar/join     # 200
+
+# The order queue must be LOCKED with no cookie. This is the check that matters most:
+# a 200 here with a full order list means the guard is inverted.
+curl -s http://127.0.0.1:8090/ar/admin/orders | grep -c 'name="token"'     # > 0 (sign-in form)
+curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+  http://127.0.0.1:8090/api/admin/orders/EEC-2609-ASEG-7K3Q                # 404, never 200
+
+# Payment details must NEVER appear in public markup — only after an order exists.
+curl -s http://127.0.0.1:8090/ar/join | grep -c "$(grep '^RAIL_VODAFONE_CASH=' .env | cut -d= -f2)"  # 0
+
+# BOTH currency paths must be able to check out. This is the one that gets missed:
+# USD is the default for anyone the app cannot place, so if only the Egypt rails are
+# set, international checkout is closed while /ar keeps working for you in Egypt.
+docker compose logs empire-agora | grep '^\[agora\]'   # read this — it names any gap
+curl -s 'http://127.0.0.1:8090/ar/join?c=USD' | grep -c 'name="rail"'   # > 0
+curl -s 'http://127.0.0.1:8090/ar/join?c=EGP' | grep -c 'name="rail"'   # > 0
+
+# The unlisted Egyptian VIP tier must NOT be advertised on the EGP path (it earns less
+# per teaching hour than the group tier it upgrades from), but must stay buyable by link.
+curl -s 'http://127.0.0.1:8090/ar/join?c=EGP'          | grep -c 'value="vip"'   # 0
+curl -s 'http://127.0.0.1:8090/ar/join?c=EGP&tier=vip' | grep -c 'value="vip"'   # > 0
 
 # Currency must resolve from the geo header, and show exactly one currency:
 curl -s -H 'cf-ipcountry: EG' http://127.0.0.1:8090/ar | grep -c 'ج\.م'    # > 0
@@ -248,8 +296,26 @@ cd /opt/empire-agora && docker compose down
   only after CSS parses — a visible swap on the hero text, which is the LCP element.
   The bytes are budgeted and `display: swap` keeps text readable throughout. Worth
   fixing, not worth blocking on.
-- **No `/data` volume.** This app stores nothing yet. Orders arrive in Phase 6 and
-  need a deliberate storage decision then; do not add a bind mount before that.
+- **The checkout is not finished.** The order *capture* path is built and tested —
+  `POST /api/orders` durably records an order and reveals payment instructions. The
+  buyer-facing `/join` flow, proof-image upload and the owner verification queue are
+  not built yet, so until they are, orders can only be created by API and every
+  buyer-facing call to action still hands off to WhatsApp. That is the intended
+  interim state, not a regression.
+
+### Backing up the ledger
+
+The orders volume is the only irreplaceable data this service holds. Add it to the
+box's existing backup routine:
+
+```bash
+docker run --rm -v empire-agora_orders_data:/data -v /root/backups:/out alpine \
+  sh -c 'cp /data/orders.db /out/orders-$(date +%F).db'
+```
+
+SQLite in WAL mode: copying `orders.db` alone can miss the most recent
+transactions. Either stop the container first, or copy `orders.db`, `orders.db-wal`
+and `orders.db-shm` together.
 
 ---
 
