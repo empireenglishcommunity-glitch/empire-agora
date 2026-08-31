@@ -1,6 +1,39 @@
 # EEC Commercial Model & Sales Page — Implementation Plan
 
-> **Status (2026-08-31): PHASE 1 COMPLETE. PHASE 0 COMPLETE EXCEPT 0.2 AND 0.3.**
+> **Status (2026-08-31): PHASES 0, 1 AND 2 COMPLETE.**
+>
+> **Phase 2 evidence:**
+> - `npm run check` green: types, price invariants, copy bidi, logical properties.
+> - `npm run build` green; 7 pages prerendered.
+> - `check:rendered` — 140 Arabic lines across 7 pages, 0 un-isolated multi-island
+>   lines, direction attributes correct.
+> - `check:perf` — 189.9 KB first view (budget 200), 74.9 KB preloaded fonts
+>   (budget 85), CSS 6.1 KB, HTML 3.0 KB.
+> - Verified at a real **360×780** viewport with `dir="rtl"`:
+>   `scrollWidth` 345 ≤ 360, so **no horizontal overflow** — the classic RTL mobile
+>   failure. Screenshots in `.kiro/artifacts/screenshots/p2-*`.
+> - Two more gates mutation-tested: a physical `ml-2` fails `check:logical`; a
+>   tightened budget fails `check:perf`.
+>
+> **A real bug was found by looking at a screenshot, and no gate could have caught
+> it.** `<Ltr>` wrapped the whole price group, forcing an LTR base over a string
+> whose currency mark is Arabic. `500 ج.م` rendered with the numeral to the *left*
+> of `ج.م` — mirrored from Arabic convention, where the amount belongs on the right.
+> Nothing was garbled, which is exactly why every checker passed it: `<bdi>` prevents
+> *garbling*, it does not make a mixed-direction group *idiomatic*. Fixed by
+> isolating only the digits for EGP and keeping `$30` whole for USD. The reasoning is
+> recorded in `src/components/Price.tsx` because it will recur.
+>
+> Two byte reductions banked while meeting the budget: **Cinzel dropped entirely**
+> (~30 KB to serve one wordmark on a page whose display type is Arabic — the
+> engraved feel now lives in the crest SVG), and Reem Kufi's unused Latin subset
+> removed (~10 KB). The perf gate itself had to be corrected twice: it counted all
+> seven font files instead of the three the page preloads (an 80% overstatement),
+> and double-counted chunks appearing as both a preload `href` and a script `src`.
+>
+> **Phase 0 remains complete except 0.2 and 0.3**, which are pull requests against
+> other repos: `empire-chronicle` #138 (registration) and `EEC-MATERIAL` #7 (style
+> guide amendment). Both are open, not merged.
 >
 > This header is the progress signal — **not** the checkboxes below. Ecosystem
 > precedent: initiatives here have read "0/28, in progress" while live in
@@ -98,29 +131,29 @@ machine-checked before a single pixel depends on them.
 
 ## Phase 2 — Design system, shell, and the bidi gate
 
-- [ ] 2.1 Tokens from design §2.1 as a Tailwind v4 `@theme` block. Use the
+- [x] 2.1 Tokens from design §2.1 as a Tailwind v4 `@theme` block. Use the
       **lightened** `#a08a68` for secondary text, not `#8b7355` — the source
       colour measures 4.43:1 and fails WCAG AA for body text. `Req: R9.4`
-- [ ] 2.2 Type system: Reem Kufi (Arabic display, self-hosted + subset), Cairo
+- [x] 2.2 Type system: Reem Kufi (Arabic display, self-hosted + subset), Cairo
       (Arabic + Latin body), Cinzel (Latin display caps). Budget ≤ 45 KB total.
       `Req: R11.3`
-- [ ] 2.3 Signature treatments: gold-gradient display text, gold-gradient primary
+- [x] 2.3 Signature treatments: gold-gradient display text, gold-gradient primary
       button with glow, outlined secondary, hairline gold rules, 20%-alpha card
       borders, radial vignette + sparse particles (CSS-only,
       `prefers-reduced-motion` respected). `Req: R9.4, R11.2`
-- [ ] 2.4 **The bidi contract.** Page-scoped `unicode-bidi: plaintext` +
+- [x] 2.4 **The bidi contract.** Page-scoped `unicode-bidi: plaintext` +
       `text-align: start`. Logical properties only — no `left`/`right` anywhere.
       *The existing contract is scoped to `.lesson-prose` and does not reach a
       marketing page.* `Req: R10.2, R10.3`
-- [ ] 2.5 `<Ltr>` isolating primitive and the `<Price>` component; every embedded
+- [x] 2.5 `<Ltr>` isolating primitive and the `<Price>` component; every embedded
       Latin token and every price goes through them. `Req: R10.4, R10.5`
-- [ ] 2.6 **CI bidi gate** — port `bidi_check.py`'s rule (flag any
+- [x] 2.6 **CI bidi gate** — port `bidi_check.py`'s rule (flag any
       Arabic-containing line with ≥2 LTR islands) against `ar.json`, plus a
       Puppeteer punctuation-position probe against rendered routes modelled on
       `tools/audit/bidi-render-probe.mjs`. **Must fail the build.** `Req: R10.7`
-- [ ] 2.7 CI performance budget: ≤ 150 KB initial transfer, LCP ≤ 2.5 s on
+- [x] 2.7 CI performance budget: ≤ 150 KB initial transfer, LCP ≤ 2.5 s on
       throttled 4G, CLS ≤ 0.05. `Req: R11.2`
-- [ ] 2.8 Verify RTL on real mobile viewports down to 360 px, not a narrowed
+- [x] 2.8 Verify RTL on real mobile viewports down to 360 px, not a narrowed
       desktop window. `Req: R10.8`
 
 **Ships when:** an empty page in the new brand passes bidi, performance and

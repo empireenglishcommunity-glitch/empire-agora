@@ -34,15 +34,19 @@
   --color-bronze-muted: #a08a68;
   --color-bronze-dim: #8b7355;
 
-  /* Type. Arabic display cannot be set in the Latin engraved serif, so the
-     system is paired rather than copied:
-       Reem Kufi  — Arabic display: geometric, monumental, reads imperial
-                    rather than devotional (which is why Amiri and Aref Ruqaa
-                    were rejected).
+  /* Type. Arabic display cannot be set in a Latin engraved serif, so the system
+     is paired rather than copied:
+       Reem Kufi  — Arabic display: geometric, monumental, reads imperial rather
+                    than devotional (which is why Amiri and Aref Ruqaa were
+                    rejected). Arabic subset only.
        Cairo      — Arabic + Latin body. Already used across the ecosystem.
-       Cinzel     — Latin display caps, matching the assessment app. */
+
+     The engraved Latin display face (Cinzel) is deliberately NOT loaded — it cost
+     ~30 KB to serve one wordmark on a page whose display type is Arabic. Latin
+     display now uses Cairo with wide tracking, and the engraved feel lives in the
+     crest SVG. See the layout for the full reasoning. */
   --font-display-ar: var(--font-reem-kufi), var(--font-cairo), serif;
-  --font-display-latin: var(--font-cinzel), Georgia, serif;
+  --font-display-latin: var(--font-cairo), system-ui, sans-serif;
   --font-sans: var(--font-cairo), system-ui, sans-serif;
 }
 
