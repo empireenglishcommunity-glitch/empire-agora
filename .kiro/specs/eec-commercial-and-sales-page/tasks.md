@@ -48,7 +48,11 @@
 >   sending it to third-party processors is not something to leave undecided.
 > - The **proof** and **testimonials** sections are not built at all (§2 and §10 of
 >   design §3) — correctly, since there is no consented content yet.
-> - The founder photo frame is reserved but **no image is wired** (Phase 8).
+> - ~~The founder photo frame is reserved but no image is wired.~~ **DONE** — one
+>   portrait wired as pre-optimised AVIF/WebP/JPEG (7.5/9.7/20.6 KB), plus a favicon
+>   from the crest. `next/image` deliberately not used: it needs `sharp` at runtime,
+>   and adding a native image pipeline to a 384 MB container to resize one static
+>   portrait is a bad trade.
 > - Seat display shows a tier's **cap**, not seats *remaining*. Honest as worded
 >   ("limited seats — 12") but 4.4 wants a derived count.
 >
@@ -382,7 +386,7 @@ data — the two questions he could not answer at the start of this work.
 
 - [ ] 8.1 Two consented before/after audio clips → §2 "30-second proof." From the
       1,095 committed broadcast clips or the 9,360 R2 speech clips. `Req: R9.3`
-- [ ] 8.2 Founder photos → §9. **Use two of the four:** the strongest formal
+- [x] 8.2 Founder photos → §9. **Use two of the four:** the strongest formal
       portrait in the founder section, one candid teaching shot as support.
       `next/image`, explicit dimensions, AVIF/WebP, ≤ 120 KB each, faces legible
       at 360 px. Not in the hero — a photo there beats the LCP text and pushes the
