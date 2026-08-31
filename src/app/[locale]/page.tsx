@@ -6,6 +6,7 @@ import { resolveCurrency } from "@/lib/currency";
 import { promotedTiers, ASSESSMENT, type Term } from "@/commerce/pricing";
 import { totalWeeks } from "@/curriculum/cefr";
 import { Crest } from "@/components/Crest";
+import { FounderPortrait } from "@/components/FounderPortrait";
 import { Ltr } from "@/components/Ltr";
 import { Amount } from "@/components/Price";
 import { TierCard } from "@/components/TierCard";
@@ -292,10 +293,7 @@ export default async function Home({
         <Section>
           <Eyebrow>{t.founder.eyebrow}</Eyebrow>
           <div className="grid items-center gap-8 sm:grid-cols-[200px_1fr]">
-            <div className="h-[260px] w-[180px] overflow-hidden rounded-sm border border-(--color-gold)/30 bg-(--color-midnight)">
-              {/* Sourced from assets/founder/. Converted to web formats in Phase 8;
-                  the frame is reserved now so the layout is already correct. */}
-            </div>
+            <FounderPortrait alt={t.founder.portraitAlt} />
             <div>
               <Display as="h3">{t.founder.title}</Display>
               <p className="mt-4 max-w-xl leading-relaxed text-(--color-text-muted)">

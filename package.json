@@ -2,7 +2,7 @@
   "name": "empire-agora",
   "version": "0.1.0",
   "private": true,
-  "description": "EEC sales and marketing site \u2014 the commercial front door",
+  "description": "EEC sales and marketing site — the commercial front door",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,10 +12,11 @@
     "check:prices": "tsx scripts/check-price-invariants.mjs",
     "check:bidi": "node --no-warnings scripts/check-bidi.mjs",
     "check:logical": "node --no-warnings scripts/check-logical-properties.mjs",
-    "check": "npm run typecheck && npm run check:prices && npm run check:bidi && npm run check:logical",
+    "check": "npm run typecheck && npm run check:prices && npm run check:orders && npm run check:bidi && npm run check:logical",
     "verify": "npm run check && npm run build && npm run check:live",
     "revenue": "tsx scripts/revenue-per-teaching-hour.mjs",
-    "check:live": "node --no-warnings scripts/check-live.mjs"
+    "check:live": "node --no-warnings scripts/check-live.mjs",
+    "check:orders": "npx tsx scripts/check-orders.mjs"
   },
   "dependencies": {
     "next": "16.2.11",
@@ -24,7 +25,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^22.20.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
