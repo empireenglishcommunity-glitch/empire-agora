@@ -68,6 +68,21 @@ cat /root/.cloudflared/config.yml     # note the tunnel name and existing ingres
 systemctl status cloudflared || docker ps --filter name=cloudflared
 ```
 
+**Measured on 2026-08-31, for comparison rather than as a target:** `available` 2,098 MB
+of 3,814 MB total (swap 892/2,047 in use) · 14 GB free on `/` · 11 containers running,
+~722 MB of actual usage against ~8 GB of *declared limits*, i.e. the box is heavily
+oversubscribed on limits and fine on real usage · 8090 free, 8080 taken by `eec-web`.
+After adding this service: `empire-agora` sat at **45.8 MiB of its 384 MiB cap** and
+`available` was unchanged at 2,096 MB.
+
+> **A live secret was found here.** `/etc/systemd/system/cloudflared.service` contains the
+> tunnel **token** on its `ExecStart` line and was mode **644 — world-readable**. Anyone with
+> any shell on this box could read it, and a tunnel token is enough to run a connector for
+> these hostnames. It is now `600`. That is a permission fix, not a rotation: **the token
+> itself should be rotated**, because it has been exposed for an unknown period (the file
+> dates from 2026-07-11). Rotate in Zero Trust → Tunnels → the tunnel → refresh token, then
+> update the unit and `systemctl daemon-reload && systemctl restart cloudflared`.
+
 > **SSH key safety.** If you add a key for any reason, **append** it:
 > `>> /root/.ssh/authorized_keys`. Never `>`. Keep the `empire-n8n` ed25519 key, and
 > `grep empire-n8n /root/.ssh/authorized_keys` before you disconnect. Overwriting
@@ -168,17 +183,49 @@ curl -s -o /dev/null -w '%{http_code}\n' http://77.42.43.250:8090/ar   # must fa
 Still nothing changes for the public. The portal keeps answering on the root domain
 throughout this step.
 
-Add to `/root/.cloudflared/config.yml`, **above** the catch-all `http_status:404`:
+> ## ⚠️ CORRECTED 2026-08-31, ON THE BOX. Read this before touching anything.
+>
+> **This tunnel is REMOTELY MANAGED. Editing `/root/.cloudflared/config.yml` does
+> nothing at all.** An earlier version of this section told you to edit that file and
+> restart. It was written without server access, and it was wrong.
+>
+> Measured evidence:
+>
+> ```
+> ExecStart = /usr/bin/cloudflared --no-autoupdate tunnel run --token <TOKEN>
+> ```
+>
+> No `--config`, no tunnel name — just a token. `tunnel run --token` takes its ingress
+> from the **Cloudflare dashboard**, not from a local file.
+>
+> It gets worse, and this is the part that would have wasted an evening: the local
+> `config.yml` declares tunnel `0502cb57-380c-4d27-a415-15e0ecc39139`, while the token
+> actually runs tunnel `79dff464-aa57-4e85-923c-6f497d01a330`. **They are different
+> tunnels.** `config.yml` is a leftover from an older setup, it lists only four
+> hostnames, and it does not mention the root domain at all — yet the root domain
+> serves fine. That combination is the tell: the file is not in use.
+>
+> So an edit there would appear to succeed, survive a restart, and change nothing,
+> while every diagnostic you have says the config "looks right".
+>
+> **Where to actually change ingress:** Cloudflare dashboard → Zero Trust → Networks →
+> Tunnels → the tunnel → **Public Hostname**. Add the hostname there and Cloudflare
+> creates the DNS record for you — so `cloudflared tunnel route dns` is not needed
+> either.
+>
+> **Do not `systemctl restart cloudflared` as part of this.** It is not required for a
+> dashboard change, and a restart drops every public hostname on this box — the bot API,
+> n8n, the MCP server and the assessment app — for as long as it takes to reconnect.
+>
+> **Leave `config.yml` alone rather than "tidying" it.** It is inert; deleting it proves
+> nothing and risks a surprise if anything ever runs `cloudflared` without the token.
 
-```yaml
-  - hostname: portal.empireenglish.online
-    service: http://localhost:8080
-```
+For the record, the hostname → origin mapping to create in the dashboard:
 
-```bash
-cloudflared tunnel route dns <your-tunnel-name> portal.empireenglish.online
-systemctl restart cloudflared      # or: docker restart cloudflared
-```
+| Public hostname | Service |
+|---|---|
+| `portal.empireenglish.online` | `http://localhost:8080` (eec-web / the portal) |
+| `empireenglish.online` (apex, later, step 5) | `http://localhost:8090` (empire-agora) |
 
 **Verify the portal fully on the new hostname before the root domain moves.** This
 is the step that makes the whole cutover reversible in practice:
@@ -222,24 +269,24 @@ Send it **before** step 5, not after.
 
 ## 5. Move the root domain
 
-Edit the **existing** root-domain ingress in `/root/.cloudflared/config.yml`, from
-`localhost:8080` to `localhost:8090`:
+In the **dashboard** (Zero Trust → Networks → Tunnels → the tunnel → Public Hostname) —
+**not** in `config.yml`, which is inert on this box; see the correction in step 3.
 
-```yaml
-  - hostname: empireenglish.online
-    service: http://localhost:8090        # was 8080
-  - hostname: www.empireenglish.online
-    service: http://localhost:8090        # was 8080
-  - hostname: portal.empireenglish.online
-    service: http://localhost:8080        # added in step 3
-```
+Repoint the existing root-domain hostnames from the portal to the sales site:
 
-```bash
-systemctl restart cloudflared
-```
+| Public hostname | Change service to | Was |
+|---|---|---|
+| `empireenglish.online` | `http://localhost:8090` | `localhost:8080` |
+| `www.empireenglish.online` | `http://localhost:8090` | `localhost:8080` |
+| `portal.empireenglish.online` | `http://localhost:8080` | *(added in step 3)* |
 
-That is the whole cutover: **one file, two lines.** Which is also why rollback is
-cheap.
+Dashboard changes to a remotely-managed tunnel are **picked up live** — the connector
+polls for configuration. **Do not restart `cloudflared`**: it is not needed, and a restart
+drops every public hostname on this box (bot API, n8n, MCP, assessment) until it
+reconnects.
+
+That is the whole cutover: **two hostnames, one field each.** Which is also why rollback
+is cheap.
 
 ---
 
@@ -275,8 +322,13 @@ currency.
 
 ## 7. Rollback
 
-Revert the two lines in `/root/.cloudflared/config.yml` back to `localhost:8080` and
-restart `cloudflared`. That is it — no rebuild, no DNS wait, no data to restore.
+Set `empireenglish.online` and `www.empireenglish.online` back to `http://localhost:8080`
+in the **dashboard** (same place as step 5). It takes effect live — no restart, no rebuild,
+no DNS wait, and no data to restore.
+
+Note what rollback does NOT undo: any order already taken stays in the `orders_data`
+volume, which is correct — someone may have paid. Rolling back the website does not roll
+back a payment, so check the queue at `/ar/admin/orders` before assuming a clean revert.
 
 The `portal.empireenglish.online` ingress can stay in place permanently either way;
 it is additive and harms nothing.
