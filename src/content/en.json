@@ -1,0 +1,15 @@
+{
+  "shell": {
+    "title": "Empire English",
+    "body": "This is the site's foundation. The real page is built in Phase 3.",
+    "tiersHeading": "Plans",
+    "status": "Phase 0 and 1: foundation and the commercial model as code."
+  },
+  "common": {
+    "currencyEgypt": "I pay from Egypt",
+    "currencyIntl": "I pay from outside Egypt",
+    "perMonth": "per month",
+    "perYear": "per year",
+    "twoMonthsFree": "two months free"
+  }
+}
