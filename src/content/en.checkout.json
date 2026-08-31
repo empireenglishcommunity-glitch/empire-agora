@@ -32,6 +32,7 @@
     },
     "submit": "Record my order",
     "afterSubmit": "Nothing has been charged yet. The next page is where the transfer details are.",
+    "whatsappCta": "Message us on WhatsApp",
     "errors": {
       "generic": "Something went wrong on our side. Try again, and if it keeps happening message us on WhatsApp.",
       "rate": "Too many attempts in a short time. Wait a moment and try again.",
