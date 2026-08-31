@@ -141,8 +141,10 @@ export default async function AdminOrders({
         {/* Counts double as the filter. Money waiting on a human is the first thing
             the operator should see, and it is also the thing they click. */}
         <div className="mt-6 flex flex-wrap gap-2">
+          {/* Labelled, not a bare number. Rendered beside six labelled chips, a lone
+              "1" reads as a status nobody can name. */}
           <FilterChip href={`/${locale}/admin/orders`} active={!filter}>
-            {`${Object.values(counts).reduce((n, v) => n + v, 0)}`}
+            {a.allFilter} <Ltr>{String(Object.values(counts).reduce((n, v) => n + v, 0))}</Ltr>
           </FilterChip>
           {STATUSES.map((s) => (
             <FilterChip

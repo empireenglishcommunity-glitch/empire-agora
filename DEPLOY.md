@@ -136,6 +136,18 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST \
 # Payment details must NEVER appear in public markup — only after an order exists.
 curl -s http://127.0.0.1:8090/ar/join | grep -c "$(grep '^RAIL_VODAFONE_CASH=' .env | cut -d= -f2)"  # 0
 
+# BOTH currency paths must be able to check out. This is the one that gets missed:
+# USD is the default for anyone the app cannot place, so if only the Egypt rails are
+# set, international checkout is closed while /ar keeps working for you in Egypt.
+docker compose logs empire-agora | grep '^\[agora\]'   # read this — it names any gap
+curl -s 'http://127.0.0.1:8090/ar/join?c=USD' | grep -c 'name="rail"'   # > 0
+curl -s 'http://127.0.0.1:8090/ar/join?c=EGP' | grep -c 'name="rail"'   # > 0
+
+# The unlisted Egyptian VIP tier must NOT be advertised on the EGP path (it earns less
+# per teaching hour than the group tier it upgrades from), but must stay buyable by link.
+curl -s 'http://127.0.0.1:8090/ar/join?c=EGP'          | grep -c 'value="vip"'   # 0
+curl -s 'http://127.0.0.1:8090/ar/join?c=EGP&tier=vip' | grep -c 'value="vip"'   # > 0
+
 # Currency must resolve from the geo header, and show exactly one currency:
 curl -s -H 'cf-ipcountry: EG' http://127.0.0.1:8090/ar | grep -c 'ج\.م'    # > 0
 curl -s -H 'cf-ipcountry: EG' http://127.0.0.1:8090/ar | grep -c '\$[0-9]' # 0

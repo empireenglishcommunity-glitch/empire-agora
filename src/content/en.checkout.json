@@ -7,6 +7,9 @@
     "termLegend": "Billing term",
     "termAnnual": "Annual",
     "termMonthly": "Monthly",
+    "perYear": "per year",
+    "perMonth": "per month",
+    "unlistedNote": "This plan is not offered publicly — you reached it through a direct link.",
     "railLegend": "Payment method",
     "railNote": "Choose how you will pay. The account details are deliberately not shown on this page — they appear once your order is recorded.",
     "rails": {
@@ -102,6 +105,7 @@
     "signIn": "Sign in",
     "signOut": "Sign out",
     "empty": "No orders in this list.",
+    "allFilter": "All",
     "countsLegend": "Status",
     "columns": {
       "reference": "Reference",

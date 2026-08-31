@@ -4,7 +4,12 @@ import { randomUUID } from "node:crypto";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getCheckout } from "@/i18n/checkout";
 import { resolveCurrency } from "@/lib/currency";
-import { purchasableTiers, type TierId, type Term } from "@/commerce/pricing";
+import {
+  promotedTiers,
+  purchasableTiers,
+  type TierId,
+  type Term,
+} from "@/commerce/pricing";
 import { railsFor, railAccount } from "@/commerce/rails";
 import { Price } from "@/components/Price";
 import { Ltr } from "@/components/Ltr";
@@ -21,8 +26,21 @@ export const metadata: Metadata = {
  * No payment details appear anywhere on this page — they are revealed only on the
  * confirmation page, after an order exists (requirements R5.7).
  *
- * `purchasableTiers` rather than `promotedTiers`: someone who followed a link to the
- * unlisted Egyptian VIP tier can still buy it. It is unpromoted, not forbidden.
+ * WHICH TIERS APPEAR, AND WHY IT IS NOT `purchasableTiers`
+ * -------------------------------------------------------
+ * This listed every purchasable tier, which quietly broke the one pricing rule the CI
+ * gate exists to protect. `vip` is `unlisted` in EGP because Egyptian 1:1 earns about
+ * $23/teaching-hour against about $45 for Egyptian group — it is worse for the business
+ * than the tier it upgrades from. "Unlisted" was implemented as "still in the array",
+ * so an Egyptian opening `/join` was shown VIP at 50,000 LE as the fourth of four
+ * options. **Rendering something in the default radio group IS advertising it.**
+ *
+ * Caught by rendering the page at 360px and reading it, not by any gate — the gate
+ * asserts the *price relationship*, and the price was right. Where the tier was
+ * offered is a different property.
+ *
+ * So: promoted tiers by default, plus the requested tier if someone arrived with an
+ * explicit `?tier=` link to an unlisted one. Buyable by link, never advertised.
  */
 export default async function Join({
   params,
@@ -39,14 +57,21 @@ export default async function Join({
   const one = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
 
   const currency = await resolveCurrency(one("c"));
-  const tiers = purchasableTiers(currency);
 
   const requestedTier = one("tier") as TierId | undefined;
-  const selectedTier = tiers.some((x) => x.id === requestedTier)
-    ? requestedTier!
-    : (tiers.find((x) => x.id === "asas")?.id ?? tiers[0].id);
+  const buyable = purchasableTiers(currency);
+  const requested = buyable.find((x) => x.id === requestedTier);
+
+  // Promoted, plus the one unlisted tier the visitor explicitly asked for.
+  const tiers = requested && !promotedTiers(currency).some((x) => x.id === requested.id)
+    ? [...promotedTiers(currency), requested]
+    : promotedTiers(currency);
+
+  const selectedTier =
+    requested?.id ?? tiers.find((x) => x.id === "asas")?.id ?? tiers[0].id;
 
   const selectedTerm: Term = one("term") === "monthly" ? "monthly" : "annual";
+  const termLabel = selectedTerm === "annual" ? j.perYear : j.perMonth;
 
   // Only rails that are actually configured. An unconfigured rail would create an
   // order the buyer cannot pay, so it is not offered at all.
@@ -109,15 +134,41 @@ export default async function Join({
                       required
                       className="accent-(--color-gold)"
                     />
+                    {/*
+                     * `nameAr` in BOTH locales, matching <TierCard> on the sales page.
+                     * `nameEn` exists in pricing.ts and is deliberately not used here:
+                     * a buyer who compared "الأساس" on the sales page could not match it
+                     * to "Basic" on the order form, and a mismatch mid-checkout is worse
+                     * than an untranslated proper noun. The tier names are product names.
+                     */}
                     <span className="font-(family-name:--font-display-ar) text-lg">
                       {tier.nameAr}
                     </span>
                   </span>
-                  <span className="text-(--color-gold)">
-                    <Price tier={tier.id} currency={currency} term={selectedTerm} />
-                  </span>
+                  {/*
+                   * The period label is not decoration: without it an Egyptian reads
+                   * "5,000 ج.م" against the "500 ج.م" the sales page quoted and sees a
+                   * bait-and-switch, because this form defaults to the annual term.
+                   *
+                   * These are real BLOCK elements, not `<span class="block">`. On /en the
+                   * Arabic tier name and an English "per year" would otherwise share one
+                   * text line — Arabic plus two Latin runs, which is a bidi failure the
+                   * live gate caught the moment the label was added. Separate blocks each
+                   * resolve their own base direction, so nothing can reorder across them.
+                   */}
+                  <div className="text-end">
+                    <div className="text-(--color-gold)">
+                      <Price tier={tier.id} currency={currency} term={selectedTerm} />
+                    </div>
+                    <div className="text-xs text-(--color-text-muted)">{termLabel}</div>
+                  </div>
                 </label>
               ))}
+              {/* Shown only when an unlisted tier was reached by direct link, so the
+                  buyer understands why they are seeing an option nobody advertises. */}
+              {requested && !promotedTiers(currency).some((x) => x.id === requested.id) ? (
+                <p className="pt-1 text-xs text-(--color-text-muted)">{j.unlistedNote}</p>
+              ) : null}
             </fieldset>
 
             {/* ── Term ── */}
