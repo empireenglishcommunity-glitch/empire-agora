@@ -232,6 +232,44 @@ export default async function Join({
               <Field name="discord" label={j.fields.discord} maxLength={80} />
             </fieldset>
 
+            {/* ── Eligibility ── */}
+            {/*
+             * An explicit, REQUIRED affirmation, not a line buried in the terms.
+             *
+             * The membership is 18+ because a student's recordings are published to a
+             * shared community channel and sent to third-party speech services. Both need
+             * a parental-consent position for a minor, and this service has none — so the
+             * honest control is to refuse minors at the door rather than to collect a
+             * consent we cannot actually process.
+             *
+             * The reason is printed next to the box. A checkbox whose consequence is
+             * hidden in a linked document is a formality; one that explains itself is a
+             * decision the buyer actually makes.
+             */}
+            <fieldset className="space-y-3">
+              <legend className="mb-3 text-lg text-(--color-gold)">{j.ageLegend}</legend>
+              <label className="flex cursor-pointer items-start gap-3 rounded-sm border border-(--color-gold)/20 p-4 hover:border-(--color-gold)/40">
+                <input
+                  type="checkbox"
+                  name="ageConfirmed"
+                  value="yes"
+                  required
+                  className="mt-1 accent-(--color-gold)"
+                />
+                {/*
+                 * Real block elements, not `<span className="block">`. The affirmation and
+                 * its explanation each contain "18", so as inline siblings they form ONE
+                 * bidi paragraph with two Latin islands inside Arabic — which the live gate
+                 * caught. Separate blocks each resolve their own base direction.
+                 * `<div>` inside `<label>` is valid: a label accepts flow content.
+                 */}
+                <div>
+                  <div className="text-(--color-parchment)">{j.ageConfirm}</div>
+                  <div className="mt-1.5 text-xs text-(--color-text-muted)">{j.ageWhy}</div>
+                </div>
+              </label>
+            </fieldset>
+
             <div>
               <Button type="submit" className="w-full sm:w-auto">
                 {j.submit}

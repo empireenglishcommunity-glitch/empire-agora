@@ -11,6 +11,7 @@
  */
 
 import { mkdtempSync, rmSync, existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -47,6 +48,10 @@ const base = {
   rail: "instapay",
   name: "Test Buyer",
   contact: "+201000000000",
+  // Every fixture affirms 18+. `createOrder` refuses without it, and there is a
+  // dedicated test below proving that refusal — so this must not be the thing that
+  // silently makes the refusal untestable.
+  ageConfirmed: true,
 };
 
 let n = 0;
@@ -270,6 +275,64 @@ const key = () => `test-key-${++n}`;
   const verifiedOnly = listOrders({ status: "verified" });
   ok(verifiedOnly.every((o) => o.status === "verified"), "status filter must filter");
   ok(listOrders({ limit: 1 }).length === 1, "limit must be honoured");
+}
+
+// ── 9. THE 18+ AFFIRMATION IS ENFORCED IN THE LEDGER, not only in the route ──
+// The route can be bypassed: the JSON endpoint exists, and any future caller (an admin
+// tool, a bot command, a script) will not think about age. The refusal has to live in the
+// function that writes the row, so there is exactly one place it cannot be skipped.
+{
+  for (const [label, value] of [
+    ["omitted", undefined],
+    ["false", false],
+    ["null", null],
+    ["the string \"yes\"", "yes"],   // truthy but not `true` — a form value leaking through
+    ["the string \"false\"", "false"],
+    ["1", 1],
+  ]) {
+    let threw = null;
+    try {
+      createOrder({ ...base, ageConfirmed: value, idempotencyKey: key() });
+    } catch (e) { threw = e; }
+    if (!(threw instanceof OrderError)) {
+      fail(
+        `creating an order with ageConfirmed ${label} must be REFUSED — it was allowed. ` +
+          `No membership may exist without the 18+ affirmation.`,
+      );
+      continue;
+    }
+    ok(threw.code === "invalid", `ageConfirmed ${label} should be "invalid", got "${threw.code}"`);
+  }
+
+  // And the affirmation is RECORDED, not merely checked — what matters later is when it
+  // was made, not that a boolean was once true.
+  const { order } = createOrder({ ...base, idempotencyKey: key() });
+  ok(
+    typeof order.ageConfirmedAt === "string" && order.ageConfirmedAt.length >= 10,
+    `an accepted order must record ageConfirmedAt, got ${JSON.stringify(order.ageConfirmedAt)}`,
+  );
+}
+
+// ── 10. THE MIGRATION IS TESTED IN A SEPARATE PROCESS ──
+// `orders.ts` fixes DATA_DIR/ORDERS_DB at module load, which is right for production and
+// means this file cannot repoint the database after importing. Rather than loosen the
+// module to suit a test, the migration check runs in its own process with the env pre-set.
+// See scripts/check-orders-migration.mjs for what it proves and why nothing else can.
+{
+  const res = spawnSync(
+    process.execPath,
+    ["--import", "tsx", join(import.meta.dirname, "check-orders-migration.mjs")],
+    { encoding: "utf8", env: { ...process.env, DATA_DIR: undefined, ORDERS_DB: undefined } },
+  );
+  const out = `${res.stdout ?? ""}${res.stderr ?? ""}`
+    .split("\n")
+    .filter((l) => l && !/ExperimentalWarning|trace-warnings/.test(l))
+    .join("\n");
+  if (res.status !== 0) {
+    fail(`the schema-migration gate FAILED:\n${out.replace(/^/gm, "      ")}`);
+  } else {
+    console.log(out.trim());
+  }
 }
 
 // ── Report ──

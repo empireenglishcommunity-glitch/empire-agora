@@ -103,8 +103,18 @@ async function waitForServer(timeoutMs = 60_000) {
 // Extraction
 // ---------------------------------------------------------------------------
 
+/**
+ * Closing tags that end a line of text.
+ *
+ * `legend` and `fieldset` were missing, which made this checker report a bidi failure that
+ * did not exist: a `<legend>` is a block-level element and forms its own bidi paragraph, so
+ * merging it into the following label's text invented a line containing both. This is a
+ * correctness fix to the checker, not a loosening to make something pass — the real markup
+ * defect it found alongside it (two inline `<span>`s each containing "18") was fixed in the
+ * markup, not here.
+ */
 const BLOCK_CLOSE =
-  /<\/(p|div|li|ul|ol|h1|h2|h3|h4|h5|h6|td|th|tr|section|article|header|footer|main|nav|figcaption|dt|dd|blockquote|button|a|label|option|summary|details)>/gi;
+  /<\/(p|div|li|ul|ol|h1|h2|h3|h4|h5|h6|td|th|tr|section|article|header|footer|main|nav|figcaption|dt|dd|blockquote|button|a|label|legend|fieldset|option|summary|details)>/gi;
 
 function textLines(html) {
   let s = html
@@ -531,6 +541,63 @@ try {
     console.log(`  unlisted tier: hidden by default, buyable by link ✓`);
   }
 
+  // ── 1c. THE 18+ AFFIRMATION IS ENFORCED AT THE DOOR ──
+  /**
+   * Membership is adults-only because a student's recordings are published to a shared
+   * community channel and sent to third-party speech services — both of which would need a
+   * parental-consent position for a minor, and neither of which this service can obtain.
+   *
+   * Both halves are asserted, because either alone is satisfiable by doing nothing: a form
+   * that always refuses passes the refusal test, and a form with no checkbox at all passes
+   * the acceptance test.
+   */
+  {
+    const form = await (await fetch(`${BASE}/ar/join?c=EGP`)).text();
+    if (!/name="ageConfirmed"/.test(form)) {
+      fail(`/ar/join has no 18+ affirmation checkbox — the policy is not being asked for`);
+    }
+    if (!/name="ageConfirmed"[^>]*required|required[^>]*name="ageConfirmed"/.test(form)) {
+      fail(`/ar/join's 18+ checkbox is not \`required\` — a buyer can skip it in the browser`);
+    }
+
+    // An unchecked box submits NOTHING, so the field is simply absent — the server must
+    // test for presence, not for a falsy value.
+    const without = await post("/api/orders/submit", {
+      locale: "ar", currency: "EGP", tier: "asas", term: "monthly",
+      rail: "vodafone_cash", name: "قاصر", contact: "+201000000002",
+      idempotencyKey: `live-check-noage-${Date.now()}`,
+    });
+    const loc = without.headers.get("location") ?? "";
+    if (!loc.includes("e=age")) {
+      fail(
+        `submitting the order form WITHOUT the 18+ affirmation was not refused ` +
+          `(redirected to "${loc}"). No membership may exist without it.`,
+      );
+    }
+
+    // The JSON endpoint is a second door to the same room.
+    const json = await fetch(`${BASE}/api/orders`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "idempotency-key": `live-json-noage-${Date.now()}` },
+      body: JSON.stringify({
+        locale: "ar", currency: "EGP", tier: "asas", term: "monthly",
+        rail: "vodafone_cash", name: "قاصر", contact: "+201000000003",
+      }),
+    });
+    if (json.status !== 400) {
+      fail(`POST /api/orders without ageConfirmed returned ${json.status}, expected 400`);
+    }
+
+    // And it must be stated in the terms, not only enforced in code.
+    for (const locale of ["ar", "en"]) {
+      const terms = await (await fetch(`${BASE}/${locale}/terms`)).text();
+      if (!/18/.test(terms)) {
+        fail(`/${locale}/terms does not state the 18+ requirement — enforced but not disclosed`);
+      }
+    }
+    console.log(`  18+ affirmation required, both endpoints    ✓`);
+  }
+
   // ── 2. Create an order ──
   let reference = null;
   {
@@ -542,6 +609,7 @@ try {
       rail: "vodafone_cash",
       name: "طالب الاختبار",
       contact: "+201000000000",
+      ageConfirmed: "yes",
       idempotencyKey: `live-check-${Date.now()}`,
     });
 
@@ -594,7 +662,8 @@ try {
     const key = `live-check-idem-${Date.now()}`;
     const body = {
       locale: "ar", currency: "EGP", tier: "asas", term: "monthly",
-      rail: "vodafone_cash", name: "مكرر", contact: "+201000000001", idempotencyKey: key,
+      rail: "vodafone_cash", name: "مكرر", contact: "+201000000001",
+      ageConfirmed: "yes", idempotencyKey: key,
     };
     const a = await post("/api/orders/submit", body);
     const b = await post("/api/orders/submit", body);
@@ -615,7 +684,8 @@ try {
     const res = await post("/api/orders/submit", {
       locale: "ar", currency: "USD", tier: "asas", term: "monthly",
       rail: "vodafone_cash", // Egypt-only: it is also the geo gate
-      name: "x", contact: "y", idempotencyKey: `live-check-mismatch-${Date.now()}`,
+      name: "x", contact: "y", ageConfirmed: "yes",
+      idempotencyKey: `live-check-mismatch-${Date.now()}`,
     });
     const loc = res.headers.get("location") ?? "";
     if (!loc.includes("e=rail")) {

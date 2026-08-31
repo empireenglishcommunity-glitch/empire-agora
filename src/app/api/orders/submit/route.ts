@@ -95,6 +95,14 @@ export async function POST(req: NextRequest) {
     return back("tier", `&term=${term}`);
   }
 
+  /**
+   * The 18+ affirmation. An unchecked box submits NOTHING — the field is simply absent —
+   * so this must test for presence, not for a falsy value.
+   */
+  if (form.get("ageConfirmed") !== "yes") {
+    return back("age", `&tier=${tier}&term=${term}`);
+  }
+
   const name = field(form, "name", 120);
   const contact = field(form, "contact", 80);
   if (!name) return back("name", `&tier=${tier}&term=${term}`);
@@ -129,6 +137,7 @@ export async function POST(req: NextRequest) {
       country: field(form, "country", 60),
       discord: field(form, "discord", 80),
       source: field(form, "source", 60),
+      ageConfirmed: true,
       idempotencyKey,
     });
 
