@@ -1,6 +1,7 @@
 # EEC Commercial Model & Sales Page — Implementation Plan
 
-> **Status (2026-08-31): PHASES 0–4 BUILT. Phase 5 PREPARED but NOT EXECUTED.**
+> **Status (2026-08-31): PHASES 0–4 BUILT · Phase 5 PREPARED, NOT EXECUTED ·
+> Phase 6 PART-BUILT (order capture works; the buyer-facing flow does not).**
 > The page exists and sells. It is not deployed, and deploying it needs SSH and a
 > Cloudflare token this session did not have — see `DEPLOY.md`.
 >
@@ -331,16 +332,21 @@ on its own hostname, and nothing that worked before is broken.
 
 - [ ] 6.1 `/[locale]/join` flow: currency → tier → term → identity → rail.
       `Req: R5.1`
-- [ ] 6.2 Reference codes `EEC-YYMM-<TIER><CUR>-<4>`, unambiguous alphabet.
+- [x] 6.2 Reference codes `EEC-YYMM-<TIER><CUR>-<4>`, unambiguous alphabet.
       `Req: R5.2`
-- [ ] 6.3 `POST /api/orders` — **synchronous, durable, fails loudly.** Explicitly
+- [x] 6.3 `POST /api/orders` — **synchronous, durable, fails loudly.** Explicitly
       not the `api/waitlist` best-effort pattern that returns `{ok:true}` on a
       failed write. `Req: R5.3`
-- [ ] 6.4 Idempotency key; retries and double-submits return the original order.
+- [x] 6.4 Idempotency key; retries and double-submits return the original order.
       `Req: R5.4`
-- [ ] 6.5 `orders` storage per design §7.1 (D1, or the VPS equivalent on the
-      alternate path). `Req: R6.1`
-- [ ] 6.6 Rail instructions revealed **only after** an order exists — the Vodafone
+- [x] 6.5 **`orders` storage built — SQLite via `node:sqlite`, NOT D1.** D1 and R2
+      were premised on Cloudflare Pages; from a VPS container they would put an
+      external API call, a network dependency and a token on the money path to store
+      a few hundred rows a year. `node:sqlite` is built into Node 22 (verified
+      unflagged in `node:22-alpine`), so this adds zero dependencies and no native
+      build, with real transactions and a real fsync. WAL + `synchronous = FULL`.
+      `Req: R6.1`
+- [x] 6.6 Rail instructions revealed **only after** an order exists — the Vodafone
       Cash number is never in public markup. `Req: R5.7`
 - [ ] 6.7 Proof upload: one tap on mobile, type/size validated, stored in **R2**
       under a non-guessable key, never on a public path. `Req: R5.5, R12.2, R12.3`
@@ -348,7 +354,7 @@ on its own hostname, and nothing that worked before is broken.
       `Req: R5.5, R11.4`
 - [ ] 6.9 Owner verification queue — authenticated, fails closed. Human approval
       preserved; no auto-grant on unverified proof. `Req: R5.6, R12.6`
-- [ ] 6.10 Rate limiting on order and admin endpoints. `Req: R12.4`
+- [x] 6.10 Rate limiting on order and admin endpoints. `Req: R12.4`
 - [ ] 6.11 EGP installments (2–3 scheduled transfers) representable.
       `Req: R5.8`
 - [ ] 6.12 Provisioning handoff on verification: Discord access, tier-appropriate
