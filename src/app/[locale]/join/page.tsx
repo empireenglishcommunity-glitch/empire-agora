@@ -13,7 +13,7 @@ import {
 import { railsFor, railAccount } from "@/commerce/rails";
 import { Price } from "@/components/Price";
 import { Ltr } from "@/components/Ltr";
-import { Button, Card, Display, Divider, Eyebrow, Lead, Section } from "@/components/ui";
+import { Button, ButtonLink, Card, Display, Divider, Eyebrow, Lead, Section } from "@/components/ui";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -77,6 +77,15 @@ export default async function Join({
   // order the buyer cannot pay, so it is not offered at all.
   const rails = railsFor(currency).filter((r) => railAccount(r.id) !== null);
 
+  /**
+   * The human fallback. Null when unset, and every caller renders nothing rather than a
+   * link to nowhere — a button that goes nowhere is worse than no button, because the
+   * buyer believes they have made contact.
+   */
+  const whatsapp = process.env.OWNER_WHATSAPP?.replace(/[^\d]/g, "")
+    ? `https://wa.me/${process.env.OWNER_WHATSAPP.replace(/[^\d]/g, "")}`
+    : null;
+
   const error = one("e");
 
   /**
@@ -106,10 +115,27 @@ export default async function Join({
         ) : null}
 
         {rails.length === 0 ? (
-          // Every rail unconfigured. Say so plainly instead of showing a form that
-          // cannot succeed.
+          /*
+           * Every rail unconfigured. Say so plainly instead of showing a form that cannot
+           * succeed — and give them the way out the copy promises.
+           *
+           * The copy says "message us on WhatsApp". Without the button that is a DEAD END:
+           * a buyer who wants to pay is told to contact us and given no means to do it.
+           * Caught by looking at the real deployed page in this exact state, which is the
+           * state a fresh install starts in.
+           *
+           * If `OWNER_WHATSAPP` is also unset there is genuinely nothing to offer, so the
+           * card falls back to the assessment page rather than rendering a link to nowhere.
+           */
           <Card className="border-(--color-bronze)">
             <p className="text-(--color-parchment)">{j.errors.rail_unavailable}</p>
+            {whatsapp ? (
+              <div className="mt-5">
+                <ButtonLink href={whatsapp} target="_blank" rel="noopener noreferrer">
+                  {j.whatsappCta}
+                </ButtonLink>
+              </div>
+            ) : null}
           </Card>
         ) : (
           <form method="post" action="/api/orders/submit" className="max-w-xl space-y-8">
