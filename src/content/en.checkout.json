@@ -62,6 +62,8 @@
     "payLegend": "Transfer details",
     "accountLabel": "Account",
     "amountExact": "Transfer exactly the amount shown. Any difference holds the order until we have spoken.",
+    "amountConverted": "The account is in AED and the amount above is in dollars. Your bank does the conversion, so the amount that arrives may differ slightly from this figure — we accept the equivalent. A small difference is not a problem.",
+    "amountStable": "The amount above is in dollars, and one USDT equals one dollar. Send that same figure. Network fees are yours, so allow for them and make sure the full amount arrives.",
     "railSteps": {
       "vodafoneCash": "Open the wallet app, choose transfer to wallet, and enter the number above.",
       "instapay": "Open InstaPay or your bank's app and transfer to the payment address above.",

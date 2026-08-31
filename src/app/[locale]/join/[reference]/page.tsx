@@ -178,7 +178,26 @@ export default async function OrderConfirmation({
                 <p className="mt-5 text-(--color-parchment)">
                   {(c.railSteps as Record<string, string>)[railDef?.labelKey ?? ""] ?? ""}
                 </p>
-                <p className="mt-4 text-sm text-(--color-text-muted)">{c.amountExact}</p>
+                {/*
+                 * The amount note is PER RAIL, because "transfer exactly the amount shown"
+                 * is not true for every rail and a buyer who cannot comply with an
+                 * instruction stops trusting the rest of the page.
+                 *
+                 *   · bank transfer — the account is AED and the order is in USD, so the
+                 *     bank converts and the arriving amount WILL differ. Telling them to
+                 *     send an exact dollar figure into an AED account is an instruction
+                 *     that cannot be followed.
+                 *   · crypto — USDT is 1:1 with the dollar so the figure holds, but network
+                 *     fees are the sender's and can arrive short.
+                 *   · everything else — exact, and a difference genuinely does hold the order.
+                 */}
+                <p className="mt-4 text-sm text-(--color-text-muted)">
+                  {order.rail === "bank_transfer"
+                    ? c.amountConverted
+                    : order.rail === "crypto"
+                      ? c.amountStable
+                      : c.amountExact}
+                </p>
               </Card>
             ) : (
               // Configured when the order was taken, unset now. Say so rather than

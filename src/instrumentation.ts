@@ -57,6 +57,40 @@ export async function register() {
     );
   }
 
+  /**
+   * Verify the crypto address, if one is configured.
+   *
+   * Every other rail tolerates a typo: a wrong PayPal address bounces, a wrong IBAN is
+   * rejected, a wrong wallet number fails. **A wrong crypto address silently succeeds into a
+   * void**, and the person who loses the money is a student paying for lessons.
+   *
+   * TRON carries a checksum, so this is detectable without asking anyone to proofread 34
+   * characters — which is exactly the task a human eye is worst at (`l`/`1`, `n`/`m`).
+   */
+  const crypto = railAccount("crypto");
+  if (crypto) {
+    const { verifyCryptoAddress } = await import("@/commerce/crypto-address");
+    const verdict = verifyCryptoAddress(crypto);
+    if (!verdict.ok) {
+      console.error(`[agora] CRYPTO ADDRESS IS INVALID — ${verdict.reason}`);
+      console.error(
+        "[agora] Crypto transfers are irreversible. Unset RAIL_CRYPTO until this is " +
+          "corrected rather than showing it to a buyer.",
+      );
+    } else if (verdict.kind === "tron") {
+      console.log("[agora] crypto address: TRON base58check checksum VALID");
+    } else {
+      console.warn(`[agora] crypto address NOT verified — ${verdict.reason}`);
+    }
+    if (!/trc20|tron|trx|erc20|bep20|bitcoin|btc|eth/i.test(crypto)) {
+      console.warn(
+        "[agora] RAIL_CRYPTO names no NETWORK. The buyer is told to send on the network " +
+          "shown, so the value should read e.g. \"USDT · TRC20 · T...\" — sending on the " +
+          "wrong network loses the funds.",
+      );
+    }
+  }
+
   // The order queue is the only surface holding buyer PII and receipts. An unset token
   // locks it (by design, it fails closed) — but the operator needs to know why.
   if (!process.env.ADMIN_TOKEN || process.env.ADMIN_TOKEN.trim().length < 16) {
