@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { seeOther } from "@/lib/redirect";
 import { attachProof, findByReference, OrderError } from "@/commerce/orders";
 import { storeProof, MAX_PROOF_BYTES } from "@/commerce/proofs";
 import { isReferenceCode } from "@/commerce/reference";
@@ -36,9 +37,7 @@ export async function POST(
   { params }: { params: Promise<{ reference: string }> },
 ) {
   const { reference } = await params;
-  const origin = req.nextUrl.origin;
-
-  // Rate-limited because this endpoint writes files.
+    // Rate-limited because this endpoint writes files.
   const key = clientKey(req);
   const now = Date.now();
   const entry = attempts.get(key);
@@ -76,10 +75,7 @@ export async function POST(
         ? "en"
         : "ar";
   const backTo = (code?: string) =>
-    NextResponse.redirect(
-      new URL(`/${locale}/join/${reference}${code ? `?e=${code}` : "?uploaded=1"}`, origin),
-      303,
-    );
+    seeOther(`/${locale}/join/${reference}${code ? `?e=${code}` : "?uploaded=1"}`);
 
   const file = form.get("proof");
   if (!(file instanceof File) || file.size === 0) {

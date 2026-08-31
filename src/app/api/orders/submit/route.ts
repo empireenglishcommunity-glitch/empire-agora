@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { seeOther } from "@/lib/redirect";
 import { createOrder, OrderError, type Rail } from "@/commerce/orders";
 import { isRailValidFor, railAccount } from "@/commerce/rails";
 import { getTier, type Currency, type TierId, type Term } from "@/commerce/pricing";
@@ -47,9 +48,7 @@ function field(form: FormData, name: string, max: number): string | null {
 }
 
 export async function POST(req: NextRequest) {
-  const origin = req.nextUrl.origin;
-
-  const key = clientKey(req);
+    const key = clientKey(req);
   const now = Date.now();
   const entry = attempts.get(key);
   if (!entry || now > entry.resetAt) {
@@ -57,7 +56,7 @@ export async function POST(req: NextRequest) {
   } else {
     entry.n += 1;
     if (entry.n > MAX_ATTEMPTS) {
-      return NextResponse.redirect(new URL(`/ar/join?e=rate`, origin), 303);
+      return seeOther(`/ar/join?e=rate`);
     }
   }
 
@@ -65,7 +64,7 @@ export async function POST(req: NextRequest) {
   try {
     form = await req.formData();
   } catch {
-    return NextResponse.redirect(new URL(`/ar/join?e=invalid`, origin), 303);
+    return seeOther(`/ar/join?e=invalid`);
   }
 
   const localeRaw = form.get("locale");
@@ -75,7 +74,7 @@ export async function POST(req: NextRequest) {
       : "ar";
 
   const back = (code: string, extra = "") =>
-    NextResponse.redirect(new URL(`/${locale}/join?e=${code}${extra}`, origin), 303);
+    seeOther(`/${locale}/join?e=${code}${extra}`);
 
   const currency = form.get("currency") as Currency;
   if (!CURRENCIES.includes(currency)) return back("currency");
@@ -141,10 +140,7 @@ export async function POST(req: NextRequest) {
       idempotencyKey,
     });
 
-    return NextResponse.redirect(
-      new URL(`/${locale}/join/${order.referenceCode}`, origin),
-      303,
-    );
+    return seeOther(`/${locale}/join/${order.referenceCode}`);
   } catch (err) {
     if (err instanceof OrderError && err.code === "invalid") {
       return back("invalid", `&tier=${tier}&term=${term}`);

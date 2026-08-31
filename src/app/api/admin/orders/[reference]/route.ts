@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { seeOther } from "@/lib/redirect";
 import { isAdminRequest } from "@/lib/admin";
 import { markVerified, setStatus, OrderError } from "@/commerce/orders";
 import { isReferenceCode } from "@/commerce/reference";
@@ -34,10 +35,7 @@ export async function POST(
   const action = form.get("action");
   const locale = form.get("locale") === "ar" ? "ar" : "en";
   const back = (code?: string) =>
-    NextResponse.redirect(
-      new URL(`/${locale}/admin/orders${code ? `?e=${code}` : "?ok=1"}`, req.nextUrl.origin),
-      303,
-    );
+    seeOther(`/${locale}/admin/orders${code ? `?e=${code}` : "?ok=1"}`);
 
   try {
     switch (action) {
